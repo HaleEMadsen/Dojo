@@ -182,4 +182,5 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool for educational use only and not an official DAF application. 
     Maintain OPSEC, and do not enter sensitive information.
 </div>
-""", unsafe_allow_html=True
+""", unsafe_allow_html=True)
+
