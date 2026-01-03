@@ -9,31 +9,32 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. STYLING (Big Buttons + Hover) ---
+# --- 2. STYLING (Electric Blue Uniformity) ---
 st.markdown("""
     <style>
-    /* Electric Blue Headers */
+    /* HEADERS - Electric Blue */
     h1, h2, h3 {
         color: #1E90FF !important; 
         font-family: 'Arial', sans-serif;
     }
     
-    /* ALL BUTTONS (Submit & Skip) - Electric Blue & Full Size */
+    /* ALL BUTTONS (Skip & Submit) - Force Electric Blue Background */
     div.stButton > button {
-        background-color: #1E90FF;
+        background-color: #1E90FF !important;
         color: white !important;
         border-radius: 5px;
         border: none;
         font-weight: bold;
         transition: all 0.3s ease;
-        font-size: 1.1em; /* Make text slightly larger */
+        font-size: 1.1em;
     }
     
     /* Hover Effect - Glows Lighter */
     div.stButton > button:hover {
-        background-color: #4da6ff;
+        background-color: #4da6ff !important;
         box-shadow: 0 0 12px rgba(30, 144, 255, 0.6);
-        transform: translateY(-1px); /* Slight lift effect */
+        transform: translateY(-1px);
+        color: white !important;
     }
 
     /* Hide default menu */
@@ -83,26 +84,23 @@ correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
 st.subheader(f"Recite: {target_quote_name}")
 
-# --- FORM (Restored 'use_container_width' for BIG buttons) ---
+# --- FORM (Buttons Swapped: Skip Left, Submit Right) ---
 with st.form(key='dojo_form'):
-    # Ctrl+Enter still works here!
     user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
     
     col1, col2 = st.columns(2)
+    
     with col1:
-        # use_container_width=True makes the button fill the column (Big again)
-        submit_pressed = st.form_submit_button("Submit", use_container_width=True)
-    with col2:
         skip_pressed = st.form_submit_button("Skip", use_container_width=True)
+    with col2:
+        submit_pressed = st.form_submit_button("Submit", use_container_width=True)
 
 # --- 7. LOGIC HANDLING ---
 
-# Handle SKIP
 if skip_pressed:
     new_question()
     st.rerun()
 
-# Handle SUBMIT
 if submit_pressed:
     if not user_attempt:
         st.session_state.feedback = "SILENCE IS NOT AN ANSWER, CADET."
@@ -114,27 +112,41 @@ if submit_pressed:
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": """
-                        You are a strict Air Force Drill Sergeant.
+                        You are a strict but fair Air Force Drill Sergeant.
+                        Analyze the Cadet's input against the Correct Quote and select the appropriate response Tier.
                         
-                        GRADING PROTOCOL:
+                        --- THE 5 TIERS OF FEEDBACK ---
                         
-                        1. **THE "BS" DETECTOR (Low Effort / Irrelevant):**
-                           - IF the input is nonsense, gibberish, "idk", "test", or completely unrelated to the quote:
-                           - ACTION: Be AGGRESSIVE. Yell at them for wasting government time.
-                           - Do NOT be constructive. Roast them for lack of discipline.
+                        TIER 1: PERFECT (100% Correct)
+                        - Input: Phonetically matches perfectly.
+                        - Tone: Professional, crisp praise.
+                        - Action: Start with "PASS."
+                        - Ex: "Outstanding." | "Sharp." | "Good drill."
                         
-                        2. **GENUINE ATTEMPT (But Wrong):**
-                           - IF they tried but missed words/phrases:
-                           - ACTION: Be firm but constructive.
-                           - POINT OUT exactly where they failed (e.g., "You missed 'fight' after 'fly'.").
-                           - TONE: Professional correction. Minimal roasting.
-                           - (Very rarely, you can drop a subtle UW Badger reference, but keep it mostly AF themed).
-
-                        3. **PERFECT:**
-                           - ACTION: "PASS." followed by a crisp compliment (e.g. "Sharp.", "Excellent.").
-                           - Ignore minor punctuation if phonetically correct.
-
-                        Keep response under 3 sentences.
+                        TIER 2: MINOR ERRORS (Typos / Punctuation)
+                        - Input: Correct words, but messy typing.
+                        - Tone: Passing, but stern about details.
+                        - Action: Start with "PASS." but admonish the sloppiness.
+                        - Ex: "PASS. But check your spelling." | "PASS. You missed a comma. Details matter."
+                        
+                        TIER 3: INCORRECT BUT TRYING (Wrong Words)
+                        - Input: A genuine attempt, but missed/wrong words.
+                        - Tone: Constructive, helpful, firm. NO ROASTING.
+                        - Action: Start with "Not quite." or "Check fire." Then explain exactly what word was missed.
+                        
+                        TIER 4: LOW EFFORT / NONSENSE (The "Clown" Tier)
+                        - Input: "idk", "blah blah", gibberish, or clearly not trying.
+                        - Tone: Sarcastic, annoyed, dismissive.
+                        - Action: "Do I look like a joke to you?" | "Stop wasting my bandwidth."
+                        
+                        TIER 5: LEWD / PROFANE (The "Outraged" Tier)
+                        - Input: Sexual, poop jokes, swear words, or offensive content.
+                        - Tone: MAXIMUM INDIGNATION. SCREAMING.
+                        - Action: "GET ON YOUR FACE!" | "DISGUSTING!" | "UNSATISFACTORY!"
+                        
+                        --- IMPORTANT ---
+                        - CRUCIAL: VARY YOUR RESPONSES. Do not use the same phrase twice in a row. Be creative within your Tier.
+                        - Keep response under 3 sentences.
                         """},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                     ],
@@ -159,7 +171,9 @@ if st.session_state.feedback:
             st.balloons()
     else:
         st.error(st.session_state.feedback)
-        st.info(f"**Correct Answer:**\n{correct_answer}")
+        # Only show the correct answer if it wasn't a "PASS"
+        if "PASS" not in st.session_state.feedback:
+            st.info(f"**Correct Answer:**\n{correct_answer}")
 
 # --- 9. FOOTER ---
 st.divider()
@@ -168,4 +182,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool for educational use only and not an official DAF application. 
     Maintain OPSEC, and do not enter sensitive information.
 </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True
