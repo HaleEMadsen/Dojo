@@ -9,16 +9,16 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. STYLING (All Blue Buttons) ---
+# --- 2. STYLING (Big Buttons + Hover) ---
 st.markdown("""
     <style>
-    /* Vibrant Blue Headers */
+    /* Electric Blue Headers */
     h1, h2, h3 {
         color: #1E90FF !important; 
         font-family: 'Arial', sans-serif;
     }
     
-    /* ALL BUTTONS (Submit & Skip) - Electric Blue */
+    /* ALL BUTTONS (Submit & Skip) - Electric Blue & Full Size */
     div.stButton > button {
         background-color: #1E90FF;
         color: white !important;
@@ -26,13 +26,14 @@ st.markdown("""
         border: none;
         font-weight: bold;
         transition: all 0.3s ease;
-        width: 100%;
+        font-size: 1.1em; /* Make text slightly larger */
     }
     
-    /* Hover Effect for ALL buttons */
+    /* Hover Effect - Glows Lighter */
     div.stButton > button:hover {
-        background-color: #4da6ff; /* Lighter blue on hover */
-        box-shadow: 0 0 10px rgba(30, 144, 255, 0.5);
+        background-color: #4da6ff;
+        box-shadow: 0 0 12px rgba(30, 144, 255, 0.6);
+        transform: translateY(-1px); /* Slight lift effect */
     }
 
     /* Hide default menu */
@@ -65,7 +66,7 @@ KNOWLEDGE_BASE = {
 if 'current_q' not in st.session_state:
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
     st.session_state.feedback = ""
-    st.session_state.feedback_type = "" # 'success' or 'error'
+    st.session_state.feedback_type = ""
 
 def new_question():
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
@@ -82,20 +83,21 @@ correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
 st.subheader(f"Recite: {target_quote_name}")
 
-# --- FORM START ---
-# Using a form enables "Ctrl+Enter" to submit and groups the buttons
+# --- FORM (Restored 'use_container_width' for BIG buttons) ---
 with st.form(key='dojo_form'):
+    # Ctrl+Enter still works here!
     user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
     
     col1, col2 = st.columns(2)
     with col1:
-        submit_pressed = st.form_submit_button("Submit")
+        # use_container_width=True makes the button fill the column (Big again)
+        submit_pressed = st.form_submit_button("Submit", use_container_width=True)
     with col2:
-        skip_pressed = st.form_submit_button("Skip")
+        skip_pressed = st.form_submit_button("Skip", use_container_width=True)
 
 # --- 7. LOGIC HANDLING ---
 
-# Handle SKIP (Inside form, skip acts as a submit, so we check it first)
+# Handle SKIP
 if skip_pressed:
     new_question()
     st.rerun()
@@ -106,31 +108,33 @@ if submit_pressed:
         st.session_state.feedback = "SILENCE IS NOT AN ANSWER, CADET."
         st.session_state.feedback_type = "error"
     else:
-        with st.spinner("Analyzing..."):
+        with st.spinner("Evaluating..."):
             try:
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": """
-                        You are a witty, constructive Air Force Drill Sergeant / UW-Madison Fan.
+                        You are a strict Air Force Drill Sergeant.
                         
-                        GOAL: Provide feedback that sounds like a real person.
+                        GRADING PROTOCOL:
                         
-                        1. IF PERFECT (phonetically):
-                           - Say "PASS." 
-                           - Add a short clear compliment (e.g., "Sharp.", "Good drill.", "On Target.").
+                        1. **THE "BS" DETECTOR (Low Effort / Irrelevant):**
+                           - IF the input is nonsense, gibberish, "idk", "test", or completely unrelated to the quote:
+                           - ACTION: Be AGGRESSIVE. Yell at them for wasting government time.
+                           - Do NOT be constructive. Roast them for lack of discipline.
                         
-                        2. IF WRONG:
-                           - Start with "Not quite." or "Check fire."
-                           - EXPLAIN THE MISTAKE clearly and constructively (e.g., "You missed the word 'fight' between 'fly' and 'win'.").
-                           - END with a mild, witty roast (UW Badger theme or AF theme).
-                           
-                        TONE EXAMPLES:
-                        - "You forgot 'integrity'. That's literally the first one, Cadet."
-                        - "You're stuttering like a Minnesota fan. The word is 'tyrannical'."
-                        - "Clean it up. My grandmother recites this faster."
-                        
-                        Keep it under 3 sentences.
+                        2. **GENUINE ATTEMPT (But Wrong):**
+                           - IF they tried but missed words/phrases:
+                           - ACTION: Be firm but constructive.
+                           - POINT OUT exactly where they failed (e.g., "You missed 'fight' after 'fly'.").
+                           - TONE: Professional correction. Minimal roasting.
+                           - (Very rarely, you can drop a subtle UW Badger reference, but keep it mostly AF themed).
+
+                        3. **PERFECT:**
+                           - ACTION: "PASS." followed by a crisp compliment (e.g. "Sharp.", "Excellent.").
+                           - Ignore minor punctuation if phonetically correct.
+
+                        Keep response under 3 sentences.
                         """},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                     ],
@@ -148,7 +152,6 @@ if submit_pressed:
                 st.error(f"Error: {e}")
 
 # --- 8. DISPLAY FEEDBACK ---
-# We display feedback outside the form so it persists nicely
 if st.session_state.feedback:
     if st.session_state.feedback_type == "success":
         st.success(st.session_state.feedback)
