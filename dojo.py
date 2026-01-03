@@ -9,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. VIBRANT STYLING WITH HOVER EFFECTS ---
+# --- 2. STYLING (All Blue Buttons) ---
 st.markdown("""
     <style>
     /* Vibrant Blue Headers */
@@ -18,34 +18,21 @@ st.markdown("""
         font-family: 'Arial', sans-serif;
     }
     
-    /* SUBMIT BUTTON (Blue) */
-    div.stButton > button:first-child {
+    /* ALL BUTTONS (Submit & Skip) - Electric Blue */
+    div.stButton > button {
         background-color: #1E90FF;
         color: white !important;
         border-radius: 5px;
         border: none;
         font-weight: bold;
-        transition: all 0.3s ease; /* Smooth transition animation */
-    }
-    /* Submit Hover Effect - Glows Lighter Blue */
-    div.stButton > button:first-child:hover {
-        background-color: #4da6ff;
-        box-shadow: 0 0 10px rgba(30, 144, 255, 0.5);
-        color: white !important;
-    }
-
-    /* SKIP BUTTON (Grey) */
-    div.stButton > button:last-child {
-        background-color: #444;
-        color: white !important;
-        border-radius: 5px;
-        border: none;
         transition: all 0.3s ease;
+        width: 100%;
     }
-    /* Skip Hover Effect - Lightens Up */
-    div.stButton > button:last-child:hover {
-        background-color: #666;
-        color: white !important;
+    
+    /* Hover Effect for ALL buttons */
+    div.stButton > button:hover {
+        background-color: #4da6ff; /* Lighter blue on hover */
+        box-shadow: 0 0 10px rgba(30, 144, 255, 0.5);
     }
 
     /* Hide default menu */
@@ -77,9 +64,13 @@ KNOWLEDGE_BASE = {
 # --- 5. SESSION STATE ---
 if 'current_q' not in st.session_state:
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
+    st.session_state.feedback = ""
+    st.session_state.feedback_type = "" # 'success' or 'error'
 
 def new_question():
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
+    st.session_state.feedback = ""
+    st.session_state.feedback_type = ""
 
 # --- 6. THE UI ---
 st.title("🦅 Warrior Knowledge Dojo")
@@ -91,58 +82,83 @@ correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
 st.subheader(f"Recite: {target_quote_name}")
 
-user_attempt = st.text_area("Type the quote:", height=120)
+# --- FORM START ---
+# Using a form enables "Ctrl+Enter" to submit and groups the buttons
+with st.form(key='dojo_form'):
+    user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        submit_pressed = st.form_submit_button("Submit")
+    with col2:
+        skip_pressed = st.form_submit_button("Skip")
 
-col1, col2 = st.columns([1, 1])
-with col1:
-    submit_btn = st.button("Submit", use_container_width=True)
-with col2:
-    skip_btn = st.button("Skip", on_click=new_question, use_container_width=True)
+# --- 7. LOGIC HANDLING ---
 
-# --- 7. LOGIC & PERSONALITY ---
-if submit_btn:
+# Handle SKIP (Inside form, skip acts as a submit, so we check it first)
+if skip_pressed:
+    new_question()
+    st.rerun()
+
+# Handle SUBMIT
+if submit_pressed:
     if not user_attempt:
-        st.error("SILENCE IS NOT AN ANSWER, CADET.")
+        st.session_state.feedback = "SILENCE IS NOT AN ANSWER, CADET."
+        st.session_state.feedback_type = "error"
     else:
-        with st.spinner("Grading..."):
+        with st.spinner("Analyzing..."):
             try:
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": """
-                        You are a strict Air Force Drill Sergeant who is also a die-hard UW-Madison Badger fan.
+                        You are a witty, constructive Air Force Drill Sergeant / UW-Madison Fan.
                         
-                        GRADING RULES:
-                        1. IGNORE punctuation and capitalization. If the words are phonetically correct, it is a PASS.
-                        2. If they pass but had typo/punctuation errors, mark it Correct but give a small warning.
-                        3. If they FAIL (wrong words), roast them.
+                        GOAL: Provide feedback that sounds like a real person.
                         
-                        ROASTING GUIDELINES (Use sparingly/creatively):
-                        - Call them silly names (e.g., "cheesehead", "freshman", "civilian").
-                        - Reference UW-Madison (e.g., "You study like a Gopher fan!", "Go back to the Union and get some ice cream.").
-                        - Reference Air Force (e.g., "My grandmother marches better than you type.").
+                        1. IF PERFECT (phonetically):
+                           - Say "PASS." 
+                           - Add a short clear compliment (e.g., "Sharp.", "Good drill.", "On Target.").
                         
-                        FORMAT:
-                        - If Correct: Start with "PASS." 
-                        - If Incorrect: Start with "FAIL." followed by the roast and the correction.
-                        - Keep response under 3 sentences.
+                        2. IF WRONG:
+                           - Start with "Not quite." or "Check fire."
+                           - EXPLAIN THE MISTAKE clearly and constructively (e.g., "You missed the word 'fight' between 'fly' and 'win'.").
+                           - END with a mild, witty roast (UW Badger theme or AF theme).
+                           
+                        TONE EXAMPLES:
+                        - "You forgot 'integrity'. That's literally the first one, Cadet."
+                        - "You're stuttering like a Minnesota fan. The word is 'tyrannical'."
+                        - "Clean it up. My grandmother recites this faster."
+                        
+                        Keep it under 3 sentences.
                         """},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                     ],
                     max_tokens=150
                 )
-                feedback = response.choices[0].message.content
+                feedback_text = response.choices[0].message.content
+                st.session_state.feedback = feedback_text
                 
-                if "PASS" in feedback:
-                    st.success(feedback)
-                    st.balloons()
+                if "PASS" in feedback_text:
+                    st.session_state.feedback_type = "success"
                 else:
-                    st.error(feedback)
-                    st.info(f"**Correct Answer:**\n{correct_answer}")
+                    st.session_state.feedback_type = "error"
+                    
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# --- 8. FOOTER ---
+# --- 8. DISPLAY FEEDBACK ---
+# We display feedback outside the form so it persists nicely
+if st.session_state.feedback:
+    if st.session_state.feedback_type == "success":
+        st.success(st.session_state.feedback)
+        if "PASS" in st.session_state.feedback:
+            st.balloons()
+    else:
+        st.error(st.session_state.feedback)
+        st.info(f"**Correct Answer:**\n{correct_answer}")
+
+# --- 9. FOOTER ---
 st.divider()
 st.markdown("""
 <div style="text-align: center; color: gray; font-size: 0.8em;">
