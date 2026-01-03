@@ -9,37 +9,54 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. PROFESSIONAL STYLING (The "Air Force" Look) ---
-# This custom CSS changes the headers to Air Force Blue and cleans up the UI.
+# --- 2. VIBRANT STYLING WITH HOVER EFFECTS ---
 st.markdown("""
     <style>
-    /* Air Force Blue Headers */
+    /* Vibrant Blue Headers */
     h1, h2, h3 {
-        color: #00308F !important;
+        color: #1E90FF !important; 
         font-family: 'Arial', sans-serif;
     }
-    /* Submit Button Styling (Blue) */
+    
+    /* SUBMIT BUTTON (Blue) */
     div.stButton > button:first-child {
-        background-color: #00308F;
-        color: white;
+        background-color: #1E90FF;
+        color: white !important;
         border-radius: 5px;
         border: none;
+        font-weight: bold;
+        transition: all 0.3s ease; /* Smooth transition animation */
     }
-    /* Skip Button Styling (Grey) */
+    /* Submit Hover Effect - Glows Lighter Blue */
+    div.stButton > button:first-child:hover {
+        background-color: #4da6ff;
+        box-shadow: 0 0 10px rgba(30, 144, 255, 0.5);
+        color: white !important;
+    }
+
+    /* SKIP BUTTON (Grey) */
     div.stButton > button:last-child {
-        color: #444;
+        background-color: #444;
+        color: white !important;
+        border-radius: 5px;
+        border: none;
+        transition: all 0.3s ease;
     }
-    /* Hide the default Streamlit menu for a cleaner look */
+    /* Skip Hover Effect - Lightens Up */
+    div.stButton > button:last-child:hover {
+        background-color: #666;
+        color: white !important;
+    }
+
+    /* Hide default menu */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SECURE AUTHENTICATION ---
+# --- 3. AUTHENTICATION ---
 api_key = st.secrets.get("OPENAI_API_KEY")
-
 if not api_key:
-    # Fallback for local testing only
     api_key = st.text_input("Enter OpenAI API Key:", type="password")
     if not api_key:
         st.warning("⚠️ API Key required to proceed.")
@@ -47,7 +64,7 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 
-# --- 4. THE KNOWLEDGE BASE ---
+# --- 4. KNOWLEDGE BASE ---
 KNOWLEDGE_BASE = {
     "Air Force Mission": "To fly, fight, and win... airpower anytime, anywhere.",
     "Space Force Mission": "Secure our Nation's interests in, from, and to space.",
@@ -60,45 +77,56 @@ KNOWLEDGE_BASE = {
 # --- 5. SESSION STATE ---
 if 'current_q' not in st.session_state:
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
-    st.session_state.feedback = None # Store feedback to keep it on screen
 
 def new_question():
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
-    st.session_state.feedback = None
 
-# --- 6. THE INTERFACE ---
+# --- 6. THE UI ---
 st.title("🦅 Warrior Knowledge Dojo")
 st.markdown("**Det 925 Training Assistant**")
 st.divider()
 
-# Display the Target
 target_quote_name = st.session_state.current_q
 correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
 st.subheader(f"Recite: {target_quote_name}")
 
-# Input Box
-user_attempt = st.text_area("Type the quote exactly:", height=120)
+user_attempt = st.text_area("Type the quote:", height=120)
 
-# Buttons in two columns
 col1, col2 = st.columns([1, 1])
-
 with col1:
     submit_btn = st.button("Submit", use_container_width=True)
 with col2:
     skip_btn = st.button("Skip", on_click=new_question, use_container_width=True)
 
-# --- 7. GRADING LOGIC ---
+# --- 7. LOGIC & PERSONALITY ---
 if submit_btn:
     if not user_attempt:
         st.error("SILENCE IS NOT AN ANSWER, CADET.")
     else:
-        with st.spinner("Checking accuracy..."):
+        with st.spinner("Grading..."):
             try:
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": "You are a strict Air Force Drill Sergeant. Compare the Cadet's input to the Correct Quote. If they are 100% perfect (including punctuation), say 'PASS' and be brief. If they made ANY mistake, scream at them (in text), point out exactly what word/punctuation they missed. Keep it under 3 sentences."},
+                        {"role": "system", "content": """
+                        You are a strict Air Force Drill Sergeant who is also a die-hard UW-Madison Badger fan.
+                        
+                        GRADING RULES:
+                        1. IGNORE punctuation and capitalization. If the words are phonetically correct, it is a PASS.
+                        2. If they pass but had typo/punctuation errors, mark it Correct but give a small warning.
+                        3. If they FAIL (wrong words), roast them.
+                        
+                        ROASTING GUIDELINES (Use sparingly/creatively):
+                        - Call them silly names (e.g., "cheesehead", "freshman", "civilian").
+                        - Reference UW-Madison (e.g., "You study like a Gopher fan!", "Go back to the Union and get some ice cream.").
+                        - Reference Air Force (e.g., "My grandmother marches better than you type.").
+                        
+                        FORMAT:
+                        - If Correct: Start with "PASS." 
+                        - If Incorrect: Start with "FAIL." followed by the roast and the correction.
+                        - Keep response under 3 sentences.
+                        """},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                     ],
                     max_tokens=150
@@ -112,9 +140,9 @@ if submit_btn:
                     st.error(feedback)
                     st.info(f"**Correct Answer:**\n{correct_answer}")
             except Exception as e:
-                st.error(f"Connection Error: {e}")
+                st.error(f"Error: {e}")
 
-# --- 8. UPDATED FOOTER ---
+# --- 8. FOOTER ---
 st.divider()
 st.markdown("""
 <div style="text-align: center; color: gray; font-size: 0.8em;">
