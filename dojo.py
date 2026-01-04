@@ -113,7 +113,7 @@ if submit_pressed:
     else:
         with st.spinner("Evaluating..."):
             try:
-                # High temperature for maximum creativity/unpredictability
+                # High temperature for maximum creativity
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     temperature=1.2, 
@@ -125,13 +125,15 @@ if submit_pressed:
                         - If input is Perfect or has tiny typos -> You MUST use the word "PASS" in your response.
                         - If input is Sloppy/Wrong -> Do NOT use the word "PASS".
                         
-                        2. TONE (Roll the dice):
-                        Don't be a generic robot. Pick ONE specific vibe for this response and commit to it fully:
-                        - Vibe A: The Disappointed Dad (Cold, quiet judgment).
-                        - Vibe B: The Confused Gen Z (Using "bet", "no cap", or "cringe" incorrectly).
-                        - Vibe C: The Angry Wisconsin Local (Obsessed with cheese curds, frozen lakes, or Spotted Cow).
-                        - Vibe D: The Air Force Punmaster (Horrible aviation puns).
-                        - Vibe E: Pure Chaos (Abstract, weird, shocking insults).
+                        2. PERSONALITY LOTTERY (Pick one based on these probabilities):
+                        
+                        - **Most of the time (66%):** Standard MTI / Disappointed Dad / Bad Puns. (Strict, concise, witty).
+                        
+                        - **Sometimes (20%):** Absurd Gen Z Vernacular. You must incorporate words like "skibidi", "sigma", "rizz", "cap", "fanum tax", or "fade" into a military context. Make it sound jarring and weird.
+                        
+                        - **Rarely (10%):** Wisconsin Local. Mention cheese curds, frozen lakes, or Spotter Cow. (Don't overdo this).
+                        
+                        - **Ultra Rare (4%):** "The Unbroken Badger". Reference the Commander's specific fitness challenge ("The Unbroken Badger") as a punishment or a goal. 
                         
                         3. CONSTRAINT:
                         - Be unpredictable.
