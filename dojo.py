@@ -132,7 +132,7 @@ if not st.session_state.answer_submitted:
         else:
             st.session_state.answer_submitted = True
             
-            with st.spinner("Drill Sergeant is grading you..."):
+            with st.spinner("MTI is grading you..."):
                 try:
                     # --- RAGE & LORE ---
                     streak = st.session_state.wrong_streak
@@ -159,7 +159,7 @@ if not st.session_state.answer_submitted:
                         persona_text = "Style: COMMANDER'S CHALLENGE. Threaten 'Unbroken Badger' which has lots of pull-ups and kettlebell work."
                     else:
                         lore_options = [
-                            "Ask if they are trying to flood the Det bathroom again.",
+                            "Ask if they are trying to flood the Det toilet again.",
                             "Tell them this effort is weaker than the dining-in horseradish.",
                             "Scream an obnoxious Area Greeting at them. e.g. Area, greet the dweeb who doesn't study Warrior Knowledge!",
                             "Tell them they are slower than an Old Ginger.",
@@ -234,3 +234,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force.
 </div>
 """, unsafe_allow_html=True)
+
