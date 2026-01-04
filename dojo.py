@@ -13,7 +13,7 @@ st.set_page_config(
 # --- 2. CONFIGURATION ---
 # !!! PASTE YOUR FULL GOOGLE SHEET URL BELOW !!!
 # Ensure the sheet is "Anyone with the link -> Viewer"
-SHEET_URL = "PASTE_YOUR_GOOGLE_SHEET_URL_HERE" 
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1gtz95NNWYXmyG8a0s7cwg8e9kGa5rXyXmes1Gs67KTw/edit?gid=0#gid=0" 
 
 # --- 3. STYLING (Mobile Safe) ---
 st.markdown("""
@@ -255,3 +255,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force.
 </div>
 """, unsafe_allow_html=True)
+
