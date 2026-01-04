@@ -124,12 +124,16 @@ if submit_pressed:
                         {"role": "system", "content": """
                         You are a strict but fair Air Force Drill Sergeant.
                         Analyze the Cadet's input against the Correct Quote.
-                        TIER 1: PERFECT -> PASS.
-                        TIER 2: MINOR ERRORS -> PASS with warning.
-                        TIER 3: WRONG -> Not quite.
-                        TIER 4: NONSENSE -> Roast.
-                        TIER 5: PROFANE -> Rage.
-                        Keep it under 3 sentences.
+                        
+                        TIER 1: PERFECT MATCH -> PASS. (Commendable attention to detail).
+                        TIER 2: TINY TYPO (Punctuation/Spelling) -> PASS. (Point it out, but accept it).
+                        TIER 3: MINOR ERRORS (1-2 wrong words) -> PASS WITH WARNING. (Sloppy, but acceptable).
+                        TIER 4: SIGNIFICANT ERRORS (Right idea, wrong phrasing) -> FAIL. (Go back to study).
+                        TIER 5: WRONG QUOTE (Confused with another quote) -> FAIL. (Total lack of preparation).
+                        TIER 6: NONSENSE/GIBBERISH -> ROAST. (Are you even trying?).
+                        TIER 7: PROFANE/INSUBORDINATE -> RAGE. (Disciplinary action required).
+                        
+                        Keep response under 3 sentences.
                         """},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                     ],
@@ -161,6 +165,5 @@ st.divider()
 st.markdown("""
 <div style="text-align: center; color: gray; font-size: 0.8em;">
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
-    <br>Questions loaded live from Google Sheets database.
 </div>
 """, unsafe_allow_html=True)
