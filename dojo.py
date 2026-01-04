@@ -138,28 +138,47 @@ if not st.session_state.answer_submitted:
                     current_streak = st.session_state.wrong_streak
                     rage_instruction = ""
                     
-                    if current_streak >= 2 and current_streak < 4:
-                        rage_instruction = f"CONTEXT: The Cadet has failed {current_streak} times in a row. Start getting annoyed."
-                    elif current_streak >= 4:
-                        rage_instruction = f"CONTEXT: The Cadet has failed {current_streak} times in a row. BE INCANDESCENT WITH RAGE. SCREAM (use caps)."
+                    if current_streak == 0:
+                        rage_instruction = "CONTEXT: First attempt. Be professional."
+                    elif current_streak < 3:
+                        # 1 or 2 wrong
+                        rage_instruction = f"CONTEXT: They have failed {current_streak} times. Get ANNOYED/STERN."
+                    elif current_streak < 5:
+                        # 3 or 4 wrong
+                        rage_instruction = f"CONTEXT: They have failed {current_streak} times. BE VERY MAD. YELL (Caps)."
+                    else:
+                        # 5+ wrong
+                        rage_instruction = f"CONTEXT: They have failed {current_streak} times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
                     
                     # --- PROBABILITY ENGINE ---
                     roll = random.uniform(0, 100)
                     
-                    # Base Prompt
+                    # Base Prompt (UPDATED FOR NEW THRESHOLDS)
                     base_instruction = f"""
                     You are a Drill Sergeant grading a Cadet.
                     
-                    1. GRADING RULES:
-                    - **PASS**: If the words are correct, even if capitalization or punctuation is wrong. Accept minor typos. Use the word "PASS".
-                    - **FAIL**: Only if words are missing or completely wrong. Do NOT use the word "PASS".
+                    1. EVALUATE THE INPUT:
+                    
+                    - **CATEGORY A: PASS** Input is correct. Ignore capitalization/punctuation/tiny typos. 
+                      ACTION: You MUST use the word "PASS". Be brief/neutral.
+                    
+                    - **CATEGORY B: NEAR MISS** Input is 80% correct but sloppy.
+                      ACTION: Do NOT use the word "PASS". 
+                      TONE: Stern, corrective. "Tighten it up." DO NOT ROAST YET (Unless streak is high).
+                    
+                    - **CATEGORY C: PROFANITY / INSUBORDINATION**
+                      ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally.
+                    
+                    - **CATEGORY D: TOTAL FAILURE**
+                      Input is wrong.
+                      ACTION: Do NOT use the word "PASS".
+                      TONE: Follow the STREAK CONTEXT below.
                     
                     2. STREAK CONTEXT:
                     {rage_instruction}
-                    - IF THEY PASS NOW and the streak was high (4+): Acknowledge they finally stopped embarrassing themselves.
                     
                     3. CONSTRAINT:
-                    Be a ONE-LINER. Short, punchy, shocking. Never explain the error.
+                    Be a ONE-LINER. Short, punchy.
                     """
                     
                     # Personality Logic
@@ -219,7 +238,6 @@ if not st.session_state.answer_submitted:
                     st.error(f"Error: {e}")
                     st.session_state.answer_submitted = False
             
-            # This rerun is inside the submit_pressed block
             st.rerun()
 
 # STATE B: RESULT MODE (User has submitted)
@@ -233,16 +251,3 @@ else:
         st.error(st.session_state.feedback)
         if "PASS" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
-
-    # Next Button
-    if st.button("Next Question ->", type="primary", use_container_width=True):
-        new_question()
-        st.rerun()
-
-# --- 8. FOOTER ---
-st.divider()
-st.markdown("""
-<div style="text-align: center; color: gray; font-size: 0.8em;">
-    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
-</div>
-""", unsafe_allow_html=True)
