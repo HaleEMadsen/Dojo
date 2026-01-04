@@ -156,11 +156,11 @@ if not st.session_state.answer_submitted:
                     
                     1. EVALUATE THE INPUT:
                     
-                    - **CATEGORY A: PASS** would be phonetically correct if read aloud. Ignore capitalization/spelling/punctuation/small/typos if the answer would be phonetically accurate. Also, don't count abbreviations as wrong, but let them know that they should say the whole answer.
-                      ACTION: You MUST use the words "Pass, Correct, or Outstanding." Be brief/neutral.
+                    - **CATEGORY A: Correct** would be phonetically correct if read aloud. Ignore capitalization/spelling/punctuation/small/typos if the answer would be phonetically accurate. Also, don't count abbreviations as wrong, but let them know that they should say the whole answer.
+                      ACTION: You MUST use the word "Correct." Also consider adding the word "Outstanding." Be brief/neutral.
                     
                     - **CATEGORY B: Sloppy Pass** Input is 80% correct but sloppy.
-                      ACTION: Use the words "messy" or "clean up" or "precision matters" or "little things"
+                      ACTION: Use the word "Correct"
                       TONE: Forgiving, corrective. DO NOT ROAST YET (Unless streak is high).
                     
                     - **CATEGORY C: PROFANITY / INSUBORDINATION**
@@ -225,7 +225,7 @@ if not st.session_state.answer_submitted:
                     feedback_text = response.choices[0].message.content
                     st.session_state.feedback = feedback_text
                     
-                    if "PASS" in feedback_text:
+                    if "Correct" in feedback_text:
                         st.session_state.feedback_type = "success"
                         if st.session_state.wrong_streak >= 4:
                             st.session_state.show_balloons = True
@@ -253,7 +253,7 @@ else:
             st.balloons()
     else:
         st.error(st.session_state.feedback)
-        if "PASS" not in st.session_state.feedback:
+        if "Correct" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
 
     # Next Button
@@ -268,6 +268,7 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
