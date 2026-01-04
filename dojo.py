@@ -182,7 +182,7 @@ if not st.session_state.answer_submitted:
                     
                     # Personality Logic
                     if roll < 75: 
-                        persona_instruction = "Style: Standard Strict MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese. (But still respect the phonetic rule. Do not nitpick or call it a near miss if the errors are just capitalization or grammar."
+                        persona_instruction = "Style: Standard MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese. (IMPORTANT: But still respect the phonetic rule. Answers are correct if they sound right when read aloud. Do not nitpick or call it a near miss if the errors are just capitalization or grammar."
                     elif roll < 85: 
                         persona_instruction = """
                         Style: GEN Z BRAINROT. You MUST use modern slang.
@@ -268,6 +268,7 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
