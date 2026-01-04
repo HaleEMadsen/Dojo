@@ -248,4 +248,5 @@ else:
         if st.session_state.show_balloons:
             st.balloons()
     else:
-        st.error(
+        st.error()
+
