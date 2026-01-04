@@ -81,11 +81,15 @@ if 'feedback' not in st.session_state:
 if 'feedback_type' not in st.session_state:
     st.session_state.feedback_type = ""
 
+if 'show_balloons' not in st.session_state:
+    st.session_state.show_balloons = False
+
 def new_question():
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
     st.session_state.feedback = ""
     st.session_state.feedback_type = ""
     st.session_state.answer_submitted = False 
+    st.session_state.show_balloons = False
 
 # --- 6. THE UI HEADER ---
 st.title("🦅 Warrior Knowledge Dojo")
@@ -146,9 +150,9 @@ if not st.session_state.answer_submitted:
                     base_instruction = f"""
                     You are a Drill Sergeant grading a Cadet.
                     
-                    1. GRADING:
-                    - If input is Perfect or has tiny typos -> You MUST use the word "PASS".
-                    - If input is Sloppy/Wrong -> Do NOT use the word "PASS".
+                    1. GRADING RULES:
+                    - **PASS**: If the words are correct, even if capitalization or punctuation is wrong. Accept minor typos. Use the word "PASS".
+                    - **FAIL**: Only if words are missing or completely wrong. Do NOT use the word "PASS".
                     
                     2. STREAK CONTEXT:
                     {rage_instruction}
@@ -200,40 +204,4 @@ if not st.session_state.answer_submitted:
                     st.session_state.feedback = feedback_text
                     
                     if "PASS" in feedback_text:
-                        st.session_state.feedback_type = "success"
-                        st.session_state.wrong_streak = 0
-                    else:
-                        st.session_state.feedback_type = "error"
-                        st.session_state.wrong_streak += 1
-                
-                except Exception as e:
-                    st.error(f"Error: {e}")
-                    st.session_state.answer_submitted = False
-            
-            # Force Reload to show feedback state
-            st.rerun()
-
-# STATE B: RESULT MODE (User has submitted)
-else:
-    # Display Feedback
-    if st.session_state.feedback_type == "success":
-        st.success(st.session_state.feedback)
-        if "PASS" in st.session_state.feedback:
-            st.balloons()
-    else:
-        st.error(st.session_state.feedback)
-        if "PASS" not in st.session_state.feedback:
-            st.info(f"**Correct Answer:**\n{correct_answer}")
-
-    # Next Button
-    if st.button("Next Question ->", type="primary", use_container_width=True):
-        new_question()
-        st.rerun()
-
-# --- 8. FOOTER ---
-st.divider()
-st.markdown("""
-<div style="text-align: center; color: gray; font-size: 0.8em;">
-    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
-</div>
-""", unsafe_allow_html=True)
+                        st.session_state.
