@@ -159,9 +159,9 @@ if not st.session_state.answer_submitted:
                     - **CATEGORY A: PASS** would be phonetically correct if read aloud. Ignore capitalization/spelling/punctuation/small/typos if the answer would be phonetically accurate. Also, don't count abbreviations as wrong, but let them know that they should say the whole answer.
                       ACTION: You MUST use the words "Pass, Correct, or Outstanding." Be brief/neutral.
                     
-                    - **CATEGORY B: NEAR MISS** Input is 80% correct but sloppy.
-                      ACTION: Do NOT use the word "PASS". 
-                      TONE: Stern, corrective. DO NOT ROAST YET (Unless streak is high).
+                    - **CATEGORY B: Sloppy Pass** Input is 80% correct but sloppy.
+                      ACTION: Use the words "messy" or "clean up" or "precision matters" or "little things"
+                      TONE: Forgiving, corrective. DO NOT ROAST YET (Unless streak is high).
                     
                     - **CATEGORY C: PROFANITY / INSUBORDINATION**
                       ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally. Call them an absurd insult.
@@ -268,6 +268,7 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
