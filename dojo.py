@@ -114,41 +114,58 @@ if submit_pressed:
     else:
         with st.spinner("Evaluating..."):
             try:
-                # High temperature for maximum creativity
+                # --- PROBABILITY ENGINE (PYTHON CONTROLLED) ---
+                # We roll a die from 0 to 100 to decide the personality rigidly.
+                roll = random.uniform(0, 100)
+                
+                # Base Prompt (Shared instructions)
+                base_instruction = """
+                You are a Drill Sergeant grading a Cadet.
+                If input is Perfect or has tiny typos -> You MUST use the word "PASS".
+                If input is Sloppy/Wrong -> Do NOT use the word "PASS".
+                Be a ONE-LINER. Short, punchy, shocking. Never explain the error.
+                """
+                
+                # Logic Tree
+                if roll < 65: 
+                    # 0% - 65% (Standard MTI)
+                    persona_instruction = "Style: Standard Strict MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese."
+                
+                elif roll < 85: 
+                    # 65% - 85% (Gen Z Brainrot) - 20% Chance
+                    persona_instruction = "Style: GEN Z BRAINROT. You MUST use words like 'skibidi', 'sigma', 'rizz', 'cap', 'fanum tax', or 'caught in 4k'. Mix military discipline with brainrot slang."
+                
+                elif roll < 90:
+                    # 85% - 90% (Wisconsin) - 5% Chance
+                    persona_instruction = "Style: WISCONSIN LOCAL. Briefly mention cheese curds, frozen lakes, or Spotted Cow beer."
+                
+                elif roll < 94:
+                    # 90% - 94% (Unbroken Badger) - 4% Chance
+                    persona_instruction = "Style: COMMANDER'S CHALLENGE. Reference the 'Unbroken Badger' fitness challenge as a punishment or goal."
+                
+                else:
+                    # 94% - 100% (Det Lore) - 6% Chance
+                    # We pick one specific lore item randomly
+                    lore_options = [
+                        "Ask if they are trying to flood the Det bathroom again.",
+                        "Tell them this effort is weaker than the dining-in horseradish.",
+                        "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
+                        "Tell them to focus before they rear-end someone in the Culver's drive-through.",
+                        "Scream an obnoxious Area Greeting at them.",
+                        "Tell them they are moving slower than the Old Ginger."
+                    ]
+                    selected_lore = random.choice(lore_options)
+                    persona_instruction = f"Style: DETACHMENT LORE. Specifically reference this event: {selected_lore}"
+
+                # Combine instructions
+                final_system_prompt = f"{base_instruction}\n\n{persona_instruction}"
+
+                # Call AI
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     temperature=1.2, 
                     messages=[
-                        {"role": "system", "content": """
-                        You are a Drill Sergeant grading a Cadet.
-                        
-                        1. GRADING:
-                        - If input is Perfect or has tiny typos -> You MUST use the word "PASS" in your response.
-                        - If input is Sloppy/Wrong -> Do NOT use the word "PASS".
-                        
-                        2. PROBABILITY LOTTERY (Strictly follow these weights):
-                        
-                        - **STANDARD MTI (65%):** Standard strictness, dad jokes, or puns. NO Det lore. NO cheese.
-                        
-                        - **GEN Z BRAINROT (20%):** You MUST use words like "skibidi", "sigma", "rizz", "cap", "fanum tax", "caught in 4k", or "fade". Mix this with military discipline. It should sound unnatural and jarring.
-                        
-                        - **WISCONSIN (5% - Rare):** Briefly mention cheese curds, frozen lakes, or Spotted Cow.
-                        
-                        - **COMMANDER CHALLENGE (4% - Rare):** Reference "The Unbroken Badger" fitness challenge.
-                        
-                        - **DETACHMENT LORE (6% Total - VERY RARE - Pick one):**
-                          - (1.9%) Flooding the Toilet: "Are you trying to flood the Det bathroom again?"
-                          - (1%) Fiery Horseradish: "This effort is weaker than the dining-in horseradish."
-                          - (1%) Special Warfare Hospital: "Keep this up and you're going to Special Warfare PT."
-                          - (1%) Culver's Crash: "Focus, before you rear-end someone in the Culver's drive-through."
-                          - (1%) Area Greetings: Scream an obnoxious Area Greeting.
-                          - (0.1%) Old Ginger: "You're moving slower than the Old Ginger."
-                        
-                        3. CONSTRAINT:
-                        - Be unpredictable.
-                        - Be a ONE-LINER. Short, punchy, shocking.
-                        - Never explain the error. Just react to it.
-                        """},
+                        {"role": "system", "content": final_system_prompt},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                     ],
                     max_tokens=100
