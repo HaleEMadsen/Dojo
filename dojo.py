@@ -64,18 +64,30 @@ if not kb_data:
 
 KNOWLEDGE_BASE = kb_data
 
-# --- 5. SESSION STATE ---
+# --- 5. SESSION STATE INITIALIZATION ---
 if 'current_q' not in st.session_state:
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
+
+# New state variables for button logic and rage meter
+if 'answer_submitted' not in st.session_state:
+    st.session_state.answer_submitted = False
+
+if 'wrong_streak' not in st.session_state:
+    st.session_state.wrong_streak = 0
+
+if 'feedback' not in st.session_state:
     st.session_state.feedback = ""
+
+if 'feedback_type' not in st.session_state:
     st.session_state.feedback_type = ""
 
 def new_question():
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
     st.session_state.feedback = ""
     st.session_state.feedback_type = ""
+    st.session_state.answer_submitted = False # Reset UI to input mode
 
-# --- 6. THE UI ---
+# --- 6. THE UI HEADER ---
 st.title("🦅 Warrior Knowledge Dojo")
 st.markdown("**Det 925 Training Assistant**")
 st.divider()
@@ -85,118 +97,151 @@ if not KNOWLEDGE_BASE:
     st.stop()
 
 target_quote_name = st.session_state.current_q
+# Safety check if sheet changed
 if target_quote_name not in KNOWLEDGE_BASE:
     new_question()
     target_quote_name = st.session_state.current_q
 
 correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
-# Topic Name Display
 st.subheader(target_quote_name)
 
-with st.form(key='dojo_form'):
-    user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
-    col1, col2 = st.columns(2)
-    with col1:
-        skip_pressed = st.form_submit_button("Skip", use_container_width=True)
-    with col2:
-        submit_pressed = st.form_submit_button("Submit", use_container_width=True)
+# --- 7. LOGIC SPLIT: INPUT MODE vs RESULT MODE ---
 
-# --- 7. LOGIC HANDLING ---
-if skip_pressed:
-    new_question()
-    st.rerun()
+# STATE A: User has NOT submitted yet
+if not st.session_state.answer_submitted:
+    with st.form(key='dojo_form'):
+        user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
+        col1, col2 = st.columns(2)
+        with col1:
+            skip_pressed = st.form_submit_button("Skip", use_container_width=True)
+        with col2:
+            submit_pressed = st.form_submit_button("Submit", use_container_width=True)
 
-if submit_pressed:
-    if not user_attempt:
-        st.session_state.feedback = "SILENCE IS NOT AN ANSWER, CADET."
-        st.session_state.feedback_type = "error"
-    else:
-        with st.spinner("Evaluating..."):
-            try:
-                # --- PROBABILITY ENGINE (PYTHON CONTROLLED) ---
-                roll = random.uniform(0, 100)
-                
-                # Base Prompt
-                base_instruction = """
-                You are a Drill Sergeant grading a Cadet.
-                If input is Perfect or has tiny typos -> You MUST use the word "PASS".
-                If input is Sloppy/Wrong -> Do NOT use the word "PASS".
-                Be a ONE-LINER. Short, punchy, shocking. Never explain the error.
-                """
-                
-                # Logic Tree
-                if roll < 65: 
-                    # 0% - 65% (Standard MTI)
-                    persona_instruction = "Style: Standard Strict MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese."
-                
-                elif roll < 85: 
-                    # 65% - 85% (Gen Z Brainrot) - 20% Chance
-                    # Expanded vocabulary list to prevent repetition
-                    persona_instruction = """
-                    Style: GEN Z BRAINROT. You MUST use modern slang.
-                    Pick ONE OR TWO from this list (don't use 'caught in 4k' every time):
-                    - skibidi / sigma / rizz / fanum tax / ohio
-                    - cap / no cap / bet / lowkey / highkey
-                    - L + ratio / goated / opps / crashout
-                    - delulu / chat is this real / let him cook
-                    Mix this with military discipline. It should sound unnatural and jarring.
+    if skip_pressed:
+        new_question()
+        st.rerun()
+
+    if submit_pressed:
+        if not user_attempt:
+            st.error("SILENCE IS NOT AN ANSWER, CADET.")
+        else:
+            # Mark as submitted to flip the UI
+            st.session_state.answer_submitted = True
+            
+            with st.spinner("Evaluating..."):
+                try:
+                    # --- RAGE METER LOGIC ---
+                    current_streak = st.session_state.wrong_streak
+                    rage_instruction = ""
+                    
+                    if current_streak >= 2 and current_streak < 4:
+                        rage_instruction = f"CONTEXT: The Cadet has failed {current_streak} times in a row. Start getting annoyed."
+                    elif current_streak >= 4:
+                        rage_instruction = f"CONTEXT: The Cadet has failed {current_streak} times in a row. BE INCANDESCENT WITH RAGE. SCREAM (use caps)."
+                    
+                    # --- PROBABILITY ENGINE ---
+                    roll = random.uniform(0, 100)
+                    
+                    # Base Prompt
+                    base_instruction = f"""
+                    You are a Drill Sergeant grading a Cadet.
+                    
+                    1. GRADING:
+                    - If input is Perfect or has tiny typos -> You MUST use the word "PASS".
+                    - If input is Sloppy/Wrong -> Do NOT use the word "PASS".
+                    
+                    2. STREAK CONTEXT:
+                    {rage_instruction}
+                    - IF THEY PASS NOW and the streak was high (4+): Acknowledge they finally stopped embarrassing themselves.
+                    
+                    3. ONE-LINER CONSTRAINT:
+                    Be short, punchy, shocking. Never explain the error.
                     """
-                
-                elif roll < 90:
-                    # 85% - 90% (Wisconsin) - 5% Chance
-                    persona_instruction = "Style: WISCONSIN LOCAL. Briefly mention cheese curds, frozen lakes, Culver's, or Spotted Cow beer."
-                
-                elif roll < 94:
-                    # 90% - 94% (Unbroken Badger) - 4% Chance
-                    persona_instruction = "Style: COMMANDER'S CHALLENGE. Reference the 'Unbroken Badger' fitness challenge as a punishment or goal."
-                
-                else:
-                    # 94% - 100% (Det Lore) - 6% Chance
-                    lore_options = [
-                        "Ask if they are trying to flood the Det bathroom again.",
-                        "Tell them this effort is weaker than the dining-in horseradish.",
-                        "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
-                        "Tell them to focus before they rear-end someone in the Culver's drive-through.",
-                        "Scream an obnoxious Area Greeting at them.",
-                        "Tell them they are moving slower than the Old Ginger."
-                    ]
-                    selected_lore = random.choice(lore_options)
-                    persona_instruction = f"Style: DETACHMENT LORE. Specifically reference this event: {selected_lore}"
+                    
+                    # Personality Logic Tree
+                    if roll < 65: 
+                        persona_instruction = "Style: Standard Strict MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese."
+                    
+                    elif roll < 85: 
+                        # Gen Z Brainrot (20%)
+                        persona_instruction = """
+                        Style: GEN Z BRAINROT. You MUST use modern slang.
+                        Pick ONE OR TWO from this list (don't use 'caught in 4k' every time):
+                        - skibidi / sigma / rizz / fanum tax / ohio
+                        - cap / no cap / bet / lowkey / highkey
+                        - L + ratio / goated / opps / crashout
+                        - delulu / chat is this real / let him cook
+                        Mix this with military discipline. It should sound unnatural and jarring.
+                        """
+                    
+                    elif roll < 90:
+                        # Wisconsin (5%)
+                        persona_instruction = "Style: WISCONSIN LOCAL. Briefly mention cheese curds, frozen lakes, Culver's, or Spotted Cow beer."
+                    
+                    elif roll < 94:
+                        # Unbroken Badger (4%)
+                        persona_instruction = "Style: COMMANDER'S CHALLENGE. Reference the 'Unbroken Badger' fitness challenge as a punishment or goal."
+                    
+                    else:
+                        # Det Lore (6%)
+                        lore_options = [
+                            "Ask if they are trying to flood the Det bathroom again.",
+                            "Tell them this effort is weaker than the dining-in horseradish.",
+                            "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
+                            "Tell them to focus before they rear-end someone in the Culver's drive-through.",
+                            "Scream an obnoxious Area Greeting at them.",
+                            "Tell them they are moving slower than the Old Ginger."
+                        ]
+                        selected_lore = random.choice(lore_options)
+                        persona_instruction = f"Style: DETACHMENT LORE. Specifically reference this event: {selected_lore}"
 
-                # Combine instructions
-                final_system_prompt = f"{base_instruction}\n\n{persona_instruction}"
+                    # Combine instructions
+                    final_system_prompt = f"{base_instruction}\n\n{persona_instruction}"
 
-                # Call AI
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    temperature=1.3, # Increased to 1.3 for maximum chaos
-                    messages=[
-                        {"role": "system", "content": final_system_prompt},
-                        {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
-                    ],
-                    max_tokens=100
-                )
-                feedback_text = response.choices[0].message.content
-                st.session_state.feedback = feedback_text
-                
-                if "PASS" in feedback_text:
-                    st.session_state.feedback_type = "success"
-                else:
-                    st.session_state.feedback_type = "error"
+                    # Call AI
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        temperature=1.3, 
+                        messages=[
+                            {"role": "system", "content": final_system_prompt},
+                            {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
+                        ],
+                        max_tokens=100
+                    )
+                    
+                    feedback_text = response.choices[0].message.content
+                    st.session_state.feedback = feedback_text
+                    
+                    # Update Streak Logic based on AI's decision
+                    if "PASS" in feedback_text:
+                        st.session_state.feedback_type = "success"
+                        st.session_state.wrong_streak = 0 # Reset streak on pass
+                    else:
+                        st.session_state.feedback_type = "error"
+                        st.session_state.wrong_streak += 1 # Increment streak on fail
+            
             except Exception as e:
                 st.error(f"Error: {e}")
+                st.session_state.answer_submitted = False # Reset if error so they can try again
+            
+            st.rerun()
 
-# --- 8. FEEDBACK DISPLAY ---
-if st.session_state.feedback:
+# STATE B: User HAS submitted (Show Result & Next Button)
+else:
+    # Display the feedback calculated in the previous run
     if st.session_state.feedback_type == "success":
         st.success(st.session_state.feedback)
         if "PASS" in st.session_state.feedback:
             st.balloons()
     else:
         st.error(st.session_state.feedback)
-        if "PASS" not in st.session_state.feedback:
-            st.info(f"**Correct Answer:**\n{correct_answer}")
+        st.info(f"**Correct Answer:**\n{correct_answer}")
+
+    # The "Next" Button
+    if st.button("Next Question ->", type="primary", use_container_width=True):
+        new_question()
+        st.rerun()
 
 # --- 9. FOOTER ---
 st.divider()
