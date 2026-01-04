@@ -161,7 +161,7 @@ if not st.session_state.answer_submitted:
                     
                     - **CATEGORY B: NEAR MISS** Input is 80% correct but sloppy.
                       ACTION: Do NOT use the word "PASS". 
-                      TONE: Stern, corrective. "Tighten it up." DO NOT ROAST YET (Unless streak is high).
+                      TONE: Stern, corrective. DO NOT ROAST YET (Unless streak is high).
                     
                     - **CATEGORY C: PROFANITY / INSUBORDINATION**
                       ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally.
@@ -186,7 +186,7 @@ if not st.session_state.answer_submitted:
                     elif roll < 85: 
                         persona_instruction = """
                         Style: GEN Z BRAINROT. You MUST use modern slang.
-                        Pick ONE OR TWO: skibidi, sigma, rizz, fanum tax, ohio, cap, no cap, bet, lowkey, highkey, L + ratio, goated, opps, crashout, delulu, let him cook.
+                        Pick ONE OR TWO: skibidi, sigma, rizz, fanum tax, ohio, cap, no cap, bet, lowkey, highkey, L + ratio, goated, opps, crashout, fade, smooth brain, lard head, monkey, goblin, clown, goober, goon, delulu, let him cook.
                         Mix this with military discipline. It should sound unnatural.
                         """
                     elif roll < 90:
@@ -264,3 +264,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
