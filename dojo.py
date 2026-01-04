@@ -25,6 +25,7 @@ st.markdown("""
     }
     
     /* 3. BUTTON STYLING (Electric Blue) */
+    /* This targets ALL buttons, including Next, Skip, and Submit */
     div.stButton > button {
         background-color: #1E90FF !important;
         color: white !important;
@@ -161,7 +162,7 @@ if not st.session_state.answer_submitted:
                             "Ask if they are trying to flood the Det bathroom again.",
                             "Tell them this effort is weaker than the dining-in horseradish.",
                             "Scream an obnoxious Area Greeting at them. e.g. Area, greet the dweeb who doesn't study Warrior Knowledge!",
-                            "Tell them they are  slower than an Old Ginger."
+                            "Tell them they are  slower than an Old Ginger.",
                             "Tell them their nonsense is more hazardous than a Culver's drive-through."
                         ]
                         persona_text = "Style: DETACHMENT LORE. Reference: " + random.choice(lore_options)
@@ -226,7 +227,10 @@ else:
     with st.form(key='next_form', border=False):
         # We put a caption to let them know
         st.caption("Press **Ctrl+Enter** for Next Question.")
-        if st.form_submit_button("Next Question ->", type="primary", use_container_width=True):
+        
+        # --- FIX: REMOVED type="primary" ---
+        # Removing 'type="primary"' allows the CSS at the top to color this Electric Blue
+        if st.form_submit_button("Next Question ->", use_container_width=True):
             new_question()
             st.rerun()
 
