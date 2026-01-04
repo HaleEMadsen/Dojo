@@ -91,7 +91,8 @@ if target_quote_name not in KNOWLEDGE_BASE:
 
 correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
-st.subheader(f"Recite: {target_quote_name}")
+# Removed "Recite:" prefix
+st.subheader(target_quote_name)
 
 with st.form(key='dojo_form'):
     user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
@@ -127,13 +128,21 @@ if submit_pressed:
                         
                         2. PERSONALITY LOTTERY (Pick one based on these probabilities):
                         
-                        - **Most of the time (66%):** Standard MTI / Disappointed Dad / Bad Puns. (Strict, concise, witty).
+                        - **Base Layer (56%):** Standard MTI / Disappointed Dad / Bad Puns. (Strict, concise, witty).
                         
-                        - **Sometimes (20%):** Absurd Gen Z Vernacular. You must incorporate words like "skibidi", "sigma", "rizz", "cap", "fanum tax", or "fade" into a military context. Make it sound jarring and weird.
+                        - **Gen Z Mode (20%):** Absurd Gen Z Vernacular. Use words like "skibidi", "sigma", "rizz", "cap", "fanum tax", or "fade". Make it sound jarring.
                         
-                        - **Rarely (10%):** Wisconsin Local. Mention cheese curds, frozen lakes, or Spotter Cow. (Don't overdo this).
+                        - **Wisconsin Mode (10%):** Mention cheese curds, frozen lakes, or Spotted Cow.
                         
-                        - **Ultra Rare (4%):** "The Unbroken Badger". Reference the Commander's specific fitness challenge ("The Unbroken Badger") as a punishment or a goal. 
+                        - **The Unbroken Badger (4%):** Reference the Commander's "Unbroken Badger" fitness challenge as a punishment/goal.
+                        
+                        - **DETACHMENT LORE (10% Total - Pick one specific event below):**
+                          - (2%) Flooding the Toilet: Compare their performance to the cadet who flooded the Det bathroom.
+                          - (2%) Fiery Horseradish: Mention the spicy horseradish incident from Dining In.
+                          - (2%) Special Warfare Hospital: Mention sending them to Special Warfare Club PT so they end up in the hospital.
+                          - (1%) Culver's Crash: Ask if they are going to rear-end someone in the Culver's drive-through next.
+                          - (2%) Area Greetings: Scream an obnoxious Area Greeting at them.
+                          - (1%) "Old Ginger": Compare them to the mid-20s "Old Ginger" cadet.
                         
                         3. CONSTRAINT:
                         - Be unpredictable.
