@@ -2,7 +2,6 @@ import streamlit as st
 from openai import OpenAI
 import pandas as pd
 import random
-import time
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -14,7 +13,7 @@ st.set_page_config(
 # --- 2. CONFIGURATION ---
 # !!! PASTE YOUR FULL GOOGLE SHEET URL BELOW !!!
 # Ensure the sheet is "Anyone with the link -> Viewer"
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1gtz95NNWYXmyG8a0s7cwg8e9kGa5rXyXmes1Gs67KTw/edit?gid=0#gid=0" 
+SHEET_URL = "PASTE_YOUR_GOOGLE_SHEET_URL_HERE" 
 
 # --- 3. STYLING (Mobile Safe) ---
 st.markdown("""
@@ -29,6 +28,7 @@ st.markdown("""
         font-family: 'Arial', sans-serif;
     }
     
+    /* Mobile-Friendly Buttons */
     div.stButton > button {
         background-color: #1E90FF !important;
         color: white !important;
@@ -55,27 +55,33 @@ st.markdown("""
 
 # --- 4. AUTHENTICATION ---
 try:
-    api_key = st.secrets["OPENAI_API_KEY"]
-    client = OpenAI(api_key=api_key)
-except:
-    st.error("⚠️ API Key required in Secrets.")
+    # We use a safer way to get secrets to prevent crashes if missing
+    if "OPENAI_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        client = OpenAI(api_key=api_key)
+    else:
+        st.error("⚠️ API Key required in Secrets.")
+        st.stop()
+except Exception as e:
+    st.error("Authentication Error: " + str(e))
     st.stop()
 
-# --- 5. LOAD DATA (Mobile Crash Fix) ---
+# --- 5. LOAD DATA (Safe Mode) ---
 @st.cache_data(ttl=600)
 def load_knowledge_base(url):
     try:
         # 1. Convert "Edit" link to "Export" link
+        export_url = url
         if "/edit" in url:
-            export_url = url.replace("/edit#gid=", "/export?format=csv&gid=")
-            if "/edit" in export_url:
+            if "gid=" in url:
+                export_url = url.replace("/edit#gid=", "/export?format=csv&gid=")
+            else:
                 export_url = url.split("/edit")[0] + "/export?format=csv"
-        else:
-            export_url = url
 
         # 2. Read directly with Pandas
         df = pd.read_csv(export_url)
-        return dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
+        # Force conversion to string to prevent syntax errors
+        return dict(zip(df.iloc[:, 0].astype(str), df.iloc[:, 1].astype(str)))
     except Exception as e:
         return None
 
@@ -112,6 +118,7 @@ st.markdown("**Det 925 Training Assistant**")
 st.divider()
 
 target_quote_name = st.session_state.current_q
+# Safety check to ensure quote exists
 if target_quote_name not in KNOWLEDGE_BASE:
     new_question()
     target_quote_name = st.session_state.current_q
@@ -135,12 +142,11 @@ if not st.session_state.answer_submitted:
 
     if submit_pressed:
         if not user_attempt:
-            st.error("SILENCE IS NOT AN ANSWER, CADET.")
+            st.warning("SILENCE IS NOT AN ANSWER, CADET.")
         else:
             st.session_state.answer_submitted = True
             
-            # --- CRITICAL FIX: NO SPINNER ---
-            # Removing st.spinner prevents iOS disconnects
+            # --- CRITICAL: NO SPINNER (Prevents Mobile Freeze) ---
             try:
                 # --- RAGE METER (Restored) ---
                 streak = st.session_state.wrong_streak
@@ -178,18 +184,19 @@ if not st.session_state.answer_submitted:
                     selected_lore = random.choice(lore_options)
                     persona_text = "Style: DETACHMENT LORE. Reference: " + selected_lore
 
-                # --- PROMPT CONSTRUCTION (Restored) ---
+                # --- PROMPT CONSTRUCTION (PHONETIC MODE ENABLED) ---
                 prompt = "You are a Drill Sergeant grading a Cadet.\n"
-                prompt += "1. EVALUATE THE INPUT:\n"
-                prompt += "- CATEGORY A (PASS): Input is correct. Ignore caps/punctuation/typos. ACTION: You MUST use the word 'PASS'. Be brief.\n"
-                prompt += "- CATEGORY B (NEAR MISS): Input is 80% correct but sloppy. ACTION: Do NOT use 'PASS'. TONE: Stern/Corrective. 'Tighten it up'. DO NOT ROAST YET (unless streak is high).\n"
-                prompt += "- CATEGORY C (PROFANITY/INSUBORDINATION): Input has swear words/backtalk. ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them.\n"
-                prompt += "- CATEGORY D (TOTAL FAILURE): Input is wrong. ACTION: Do NOT use 'PASS'. TONE: Roast them.\n\n"
+                prompt += "1. GRADING RULES (PHONETIC MODE):\n"
+                prompt += "- CRITICAL: Ignore capitalization, punctuation, and spelling errors.\n"
+                prompt += "- IF IT SOUNDS RIGHT: If the user's input matches the phonetic sound of the correct answer (even with sloppy typing), you MUST start with 'PASS'.\n"
+                prompt += "- CATEGORY A (PASS): Input is perfect or just missing punctuation. ACTION: Say 'PASS'.\n"
+                prompt += "- CATEGORY B (PASS WITH CORRECTION): Input is correct but has typos/spelling errors. ACTION: Say 'PASS'. Then gently correct the spelling. DO NOT FAIL THEM FOR TYPOS.\n"
+                prompt += "- CATEGORY C (FAIL): Significant words missing or completely wrong. ACTION: Do NOT use 'PASS'. Roast them.\n\n"
                 prompt += "2. STREAK CONTEXT:\n" + rage_text + "\n\n"
                 prompt += "3. PERSONALITY:\n" + persona_text + "\n\n"
                 prompt += "4. CONSTRAINT: Be a ONE-LINER. Short, punchy."
 
-                # --- SAFE EXECUTION ---
+                # --- SAFE STRING CONSTRUCTION (Prevents Syntax Crashes) ---
                 user_content_str = "Correct Quote: " + str(correct_answer) + "\n\nCadet Input: " + str(user_attempt)
 
                 response = client.chat.completions.create(
@@ -216,7 +223,8 @@ if not st.session_state.answer_submitted:
                     st.session_state.wrong_streak += 1
             
             except Exception as e:
-                st.error(f"Error: {e}")
+                # This catches the crash and shows a readable error instead of code dump
+                st.error("System Error: " + str(e))
                 st.session_state.answer_submitted = False
             
             st.rerun()
@@ -229,9 +237,12 @@ else:
             st.balloons()
     else:
         st.error(st.session_state.feedback)
-        # RESTORED: This is the specific layout you liked (Blue Box)
+        
+        # Restore the Blue Info Box (Safe Formatting)
         if "PASS" not in st.session_state.feedback:
-            st.info(f"**Correct Answer:**\n{correct_answer}")
+            # We use Safe Concatenation here to prevent the f-string syntax error
+            msg = "**Correct Answer:**\n" + str(correct_answer)
+            st.info(msg)
 
     if st.button("Next Question ->", type="primary", use_container_width=True):
         new_question()
@@ -244,4 +255,3 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force.
 </div>
 """, unsafe_allow_html=True)
-
