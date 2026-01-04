@@ -46,11 +46,13 @@ if not api_key:
 client = OpenAI(api_key=api_key)
 
 # --- 4. LOAD DATA FROM GOOGLE SHEETS ---
+# Cache allows us to check for updates every 60 seconds
 @st.cache_data(ttl=60)
 def load_knowledge_base():
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        df = conn.read()
+        # ttl=0 here ensures we get fresh data from Google, not the library's internal cache
+        df = conn.read(ttl=0)
         # Assumes Column 1 = Key (Topic), Column 2 = Value (Answer)
         data_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
         return data_dict
@@ -158,7 +160,7 @@ if st.session_state.feedback:
 st.divider()
 st.markdown("""
 <div style="text-align: center; color: gray; font-size: 0.8em;">
-    NOTICE: This is a cadet-developed study tool. Maintain OPSEC.
+    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
     <br>Questions loaded live from Google Sheets database.
 </div>
 """, unsafe_allow_html=True)
