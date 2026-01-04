@@ -156,7 +156,7 @@ if not st.session_state.answer_submitted:
                     
                     1. EVALUATE THE INPUT:
                     
-                    - **CATEGORY A: PASS** Input is correct. Ignore capitalization/spelling/punctuation/small typos if the answer would be phonetically about accurate. 
+                    - **CATEGORY A: PASS** would be phonetically correct if read aloud. Ignore capitalization/spelling/punctuation/small/typos if the answer would be phonetically accurate. Also, don't count abbreviations as wrong, but let them know that they should say the whole answer.
                       ACTION: You MUST use the words "Pass, Correct, or Outstanding." Be brief/neutral.
                     
                     - **CATEGORY B: NEAR MISS** Input is 80% correct but sloppy.
@@ -268,6 +268,7 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
