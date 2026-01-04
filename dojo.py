@@ -248,5 +248,19 @@ else:
         if st.session_state.show_balloons:
             st.balloons()
     else:
-        st.error()
+        st.error(st.session_state.feedback)
+        if "PASS" not in st.session_state.feedback:
+            st.info(f"**Correct Answer:**\n{correct_answer}")
 
+    # Next Button
+    if st.button("Next Question ->", type="primary", use_container_width=True):
+        new_question()
+        st.rerun()
+
+# --- 8. FOOTER ---
+st.divider()
+st.markdown("""
+<div style="text-align: center; color: gray; font-size: 0.8em;">
+    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
+</div>
+""", unsafe_allow_html=True)
