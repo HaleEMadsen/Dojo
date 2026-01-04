@@ -156,15 +156,15 @@ if not st.session_state.answer_submitted:
                     
                     1. EVALUATE THE INPUT:
                     
-                    - **CATEGORY A: PASS** Input is correct. Ignore capitalization/punctuation/tiny typos. 
-                      ACTION: You MUST use the word "PASS". Be brief/neutral.
+                    - **CATEGORY A: PASS** Input is correct. Ignore capitalization/spelling/punctuation/small typos if the answer would be phonetically about accurate. 
+                      ACTION: You MUST use the words "Pass, Correct, or Outstanding." Be brief/neutral.
                     
                     - **CATEGORY B: NEAR MISS** Input is 80% correct but sloppy.
                       ACTION: Do NOT use the word "PASS". 
                       TONE: Stern, corrective. DO NOT ROAST YET (Unless streak is high).
                     
                     - **CATEGORY C: PROFANITY / INSUBORDINATION**
-                      ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally.
+                      ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally. Call them an absurd insult.
                     
                     - **CATEGORY D: TOTAL FAILURE**
                       Input is wrong.
@@ -191,7 +191,7 @@ if not st.session_state.answer_submitted:
                         """
                     elif roll < 90:
                         persona_instruction = "Style: WISCONSIN LOCAL. Briefly mention cheese curds, frozen lakes, Culver's, or Spotted Cow beer."
-                    elif roll < 94:
+                    elif roll < 93:
                         persona_instruction = "Style: COMMANDER'S CHALLENGE. Reference the 'Unbroken Badger' fitness challenge as a punishment or goal."
                     else:
                         lore_options = [
@@ -199,8 +199,12 @@ if not st.session_state.answer_submitted:
                             "Tell them this effort is weaker than the dining-in horseradish.",
                             "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
                             "Tell them to focus before they rear-end someone in the Culver's drive-through.",
-                            "Scream an obnoxious Area Greeting at them.",
-                            "Tell them they are moving slower than the Old Ginger."
+                            "Scream an obnoxious Area Greeting at them. e.g. Area, greet the clown who doesn't study Warrior Knowledge!",
+                            "Tell them they are slower than an Old Ginger."
+                            "Tell them LLAB just got moved back to 0600 because of them."
+                            "Tell them we're bringing alligator crawls back to PT because of them."
+                            "Tell them that our Special Guest would like a word with them."
+                            "Tell them LLABs got extended back to four hours because of their incompetence."
                         ]
                         selected_lore = random.choice(lore_options)
                         persona_instruction = f"Style: DETACHMENT LORE. Reference: {selected_lore}"
@@ -264,5 +268,6 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
 
