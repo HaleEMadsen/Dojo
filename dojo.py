@@ -13,9 +13,10 @@ st.set_page_config(
 
 # --- 2. CONFIGURATION ---
 # !!! PASTE YOUR FULL GOOGLE SHEET URL BELOW !!!
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1gtz95NNWYXmyG8a0s7cwg8e9kGa5rXyXmes1Gs67KTw/edit?gid=0#gid=0" 
+# Ensure the sheet is "Anyone with the link -> Viewer"
+SHEET_URL = "PASTE_YOUR_GOOGLE_SHEET_URL_HERE" 
 
-# --- 3. STYLING (Full Desktop & Mobile Support) ---
+# --- 3. STYLING (Mobile Safe) ---
 st.markdown("""
     <style>
     /* Prevent iOS Zoom on focus */
@@ -35,8 +36,8 @@ st.markdown("""
         border: none;
         font-weight: bold;
         transition: all 0.3s ease;
-        font-size: 18px !important; /* Larger for mobile tap */
-        height: 60px; /* Taller for mobile tap */
+        font-size: 18px !important; 
+        height: 60px;
         width: 100%;
     }
     
@@ -60,32 +61,28 @@ except:
     st.error("⚠️ API Key required in Secrets.")
     st.stop()
 
-# --- 5. LOAD DATA (The Mobile Fix) ---
+# --- 5. LOAD DATA (Mobile Crash Fix) ---
 @st.cache_data(ttl=600)
 def load_knowledge_base(url):
     try:
         # 1. Convert "Edit" link to "Export" link
         if "/edit" in url:
             export_url = url.replace("/edit#gid=", "/export?format=csv&gid=")
-            # Catch generic links without GID
             if "/edit" in export_url:
                 export_url = url.split("/edit")[0] + "/export?format=csv"
         else:
             export_url = url
 
-        # 2. Read directly with Pandas (Instant load, no handshake)
+        # 2. Read directly with Pandas
         df = pd.read_csv(export_url)
-        
-        # 3. Convert to Dictionary
-        data_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
-        return data_dict
+        return dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
     except Exception as e:
         return None
 
 KNOWLEDGE_BASE = load_knowledge_base(SHEET_URL)
 
 if not KNOWLEDGE_BASE:
-    st.error("⚠️ Connection Error. \n\n1. Make sure your Google Sheet is set to 'Anyone with the link' -> 'Viewer'.\n2. Paste the link in Line 14.")
+    st.error("⚠️ Connection Error. \n\n1. Make sure your Google Sheet is set to 'Anyone with the link' -> 'Viewer'.\n2. Paste the link in Line 16.")
     st.stop()
 
 # --- 6. SESSION STATE ---
@@ -125,7 +122,6 @@ st.subheader(target_quote_name)
 # --- 8. LOGIC LOOP ---
 if not st.session_state.answer_submitted:
     with st.form(key='dojo_form'):
-        # Height 150 prevents keyboard covering text on mobile
         user_attempt = st.text_area("Type the quote:", height=150)
         col1, col2 = st.columns(2)
         with col1:
@@ -143,98 +139,99 @@ if not st.session_state.answer_submitted:
         else:
             st.session_state.answer_submitted = True
             
-            with st.spinner("Evaluating..."):
-                try:
-                    # --- RAGE METER (Restored) ---
-                    streak = st.session_state.wrong_streak
-                    rage_text = ""
-                    if streak == 0:
-                        rage_text = "Context: First attempt. Be professional."
-                    elif streak < 3:
-                        rage_text = "Context: Failed " + str(streak) + " times. Get ANNOYED/STERN."
-                    elif streak < 5:
-                        rage_text = "Context: Failed " + str(streak) + " times. BE VERY MAD. YELL (Caps)."
-                    else:
-                        rage_text = "Context: Failed " + str(streak) + " times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
+            # --- CRITICAL FIX: NO SPINNER ---
+            # Removing st.spinner prevents iOS disconnects
+            try:
+                # --- RAGE METER (Restored) ---
+                streak = st.session_state.wrong_streak
+                rage_text = ""
+                if streak == 0:
+                    rage_text = "Context: First attempt. Be professional."
+                elif streak < 3:
+                    rage_text = "Context: Failed " + str(streak) + " times. Get ANNOYED/STERN."
+                elif streak < 5:
+                    rage_text = "Context: Failed " + str(streak) + " times. BE VERY MAD. YELL (Caps)."
+                else:
+                    rage_text = "Context: Failed " + str(streak) + " times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
 
-                    # --- PERSONALITY ENGINE (Restored) ---
-                    roll = random.uniform(0, 100)
-                    persona_text = ""
-                    
-                    if roll < 65:
-                        persona_text = "Style: Strict MTI, Disappointed Dad, or Bad Pun. No slang."
-                    elif roll < 85:
-                        persona_text = "Style: GEN Z BRAINROT. Use: skibidi, sigma, rizz, fanum tax, no cap, bet, lowkey, L + ratio, goated, opps, crashout, delulu, let him cook."
-                    elif roll < 90:
-                        persona_text = "Style: WISCONSIN LOCAL. Mention cheese curds, frozen lakes, Culver's, or Spotted Cow."
-                    elif roll < 94:
-                        persona_text = "Style: COMMANDER'S CHALLENGE. Threaten them with the 'Unbroken Badger' workout."
-                    else:
-                        lore_options = [
-                            "Ask if they are trying to flood the Det bathroom again.",
-                            "Tell them this effort is weaker than the dining-in horseradish.",
-                            "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
-                            "Tell them to focus before they rear-end someone in the Culver's drive-through.",
-                            "Scream an obnoxious Area Greeting at them.",
-                            "Tell them they are moving slower than the Old Ginger."
-                        ]
-                        selected_lore = random.choice(lore_options)
-                        persona_text = "Style: DETACHMENT LORE. Reference: " + selected_lore
-
-                    # --- PROMPT CONSTRUCTION (Restored) ---
-                    prompt = "You are a Drill Sergeant grading a Cadet.\n"
-                    prompt += "1. EVALUATE THE INPUT:\n"
-                    prompt += "- CATEGORY A (PASS): Input is correct. Ignore caps/punctuation/typos. ACTION: You MUST use the word 'PASS'. Be brief.\n"
-                    prompt += "- CATEGORY B (NEAR MISS): Input is 80% correct but sloppy. ACTION: Do NOT use 'PASS'. TONE: Stern/Corrective. 'Tighten it up'. DO NOT ROAST YET (unless streak is high).\n"
-                    prompt += "- CATEGORY C (PROFANITY/INSUBORDINATION): Input has swear words/backtalk. ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them.\n"
-                    prompt += "- CATEGORY D (TOTAL FAILURE): Input is wrong. ACTION: Do NOT use 'PASS'. TONE: Roast them.\n\n"
-                    prompt += "2. STREAK CONTEXT:\n" + rage_text + "\n\n"
-                    prompt += "3. PERSONALITY:\n" + persona_text + "\n\n"
-                    prompt += "4. CONSTRAINT: Be a ONE-LINER. Short, punchy."
-
-                    # --- SAFE EXECUTION ---
-                    user_content_str = "Correct Quote: " + str(correct_answer) + "\n\nCadet Input: " + str(user_attempt)
-
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        temperature=1.3, 
-                        messages=[
-                            {"role": "system", "content": prompt},
-                            {"role": "user", "content": user_content_str}
-                        ],
-                        max_tokens=150
-                    )
-                    
-                    feedback_text = response.choices[0].message.content
-                    st.session_state.feedback = feedback_text
-                    
-                    if "PASS" in feedback_text:
-                        st.session_state.feedback_type = "success"
-                        if st.session_state.wrong_streak >= 4:
-                            st.session_state.show_balloons = True
-                        st.session_state.wrong_streak = 0
-                    else:
-                        st.session_state.feedback_type = "error"
-                        st.session_state.show_balloons = False
-                        st.session_state.wrong_streak += 1
+                # --- PERSONALITY ENGINE (Restored) ---
+                roll = random.uniform(0, 100)
+                persona_text = ""
                 
-                except Exception as e:
-                    st.error(f"Error: {e}")
-                    st.session_state.answer_submitted = False
+                if roll < 65:
+                    persona_text = "Style: Strict MTI, Disappointed Dad, or Bad Pun. No slang."
+                elif roll < 85:
+                    persona_text = "Style: GEN Z BRAINROT. Use: skibidi, sigma, rizz, fanum tax, no cap, bet, lowkey, L + ratio, goated, opps, crashout, delulu, let him cook."
+                elif roll < 90:
+                    persona_text = "Style: WISCONSIN LOCAL. Mention cheese curds, frozen lakes, Culver's, or Spotted Cow."
+                elif roll < 94:
+                    persona_text = "Style: COMMANDER'S CHALLENGE. Threaten them with the 'Unbroken Badger' workout."
+                else:
+                    lore_options = [
+                        "Ask if they are trying to flood the Det bathroom again.",
+                        "Tell them this effort is weaker than the dining-in horseradish.",
+                        "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
+                        "Tell them to focus before they rear-end someone in the Culver's drive-through.",
+                        "Scream an obnoxious Area Greeting at them.",
+                        "Tell them they are moving slower than the Old Ginger."
+                    ]
+                    selected_lore = random.choice(lore_options)
+                    persona_text = "Style: DETACHMENT LORE. Reference: " + selected_lore
+
+                # --- PROMPT CONSTRUCTION (Restored) ---
+                prompt = "You are a Drill Sergeant grading a Cadet.\n"
+                prompt += "1. EVALUATE THE INPUT:\n"
+                prompt += "- CATEGORY A (PASS): Input is correct. Ignore caps/punctuation/typos. ACTION: You MUST use the word 'PASS'. Be brief.\n"
+                prompt += "- CATEGORY B (NEAR MISS): Input is 80% correct but sloppy. ACTION: Do NOT use 'PASS'. TONE: Stern/Corrective. 'Tighten it up'. DO NOT ROAST YET (unless streak is high).\n"
+                prompt += "- CATEGORY C (PROFANITY/INSUBORDINATION): Input has swear words/backtalk. ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them.\n"
+                prompt += "- CATEGORY D (TOTAL FAILURE): Input is wrong. ACTION: Do NOT use 'PASS'. TONE: Roast them.\n\n"
+                prompt += "2. STREAK CONTEXT:\n" + rage_text + "\n\n"
+                prompt += "3. PERSONALITY:\n" + persona_text + "\n\n"
+                prompt += "4. CONSTRAINT: Be a ONE-LINER. Short, punchy."
+
+                # --- SAFE EXECUTION ---
+                user_content_str = "Correct Quote: " + str(correct_answer) + "\n\nCadet Input: " + str(user_attempt)
+
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    temperature=1.3, 
+                    messages=[
+                        {"role": "system", "content": prompt},
+                        {"role": "user", "content": user_content_str}
+                    ],
+                    max_tokens=150
+                )
+                
+                feedback_text = response.choices[0].message.content
+                st.session_state.feedback = feedback_text
+                
+                if "PASS" in feedback_text:
+                    st.session_state.feedback_type = "success"
+                    if st.session_state.wrong_streak >= 4:
+                        st.session_state.show_balloons = True
+                    st.session_state.wrong_streak = 0
+                else:
+                    st.session_state.feedback_type = "error"
+                    st.session_state.show_balloons = False
+                    st.session_state.wrong_streak += 1
+            
+            except Exception as e:
+                st.error(f"Error: {e}")
+                st.session_state.answer_submitted = False
             
             st.rerun()
 
 else:
-    # RESULT SCREEN
+    # --- RESULT SCREEN (Restored to User Preference) ---
     if st.session_state.feedback_type == "success":
         st.success(st.session_state.feedback)
         if st.session_state.show_balloons:
             st.balloons()
     else:
         st.error(st.session_state.feedback)
+        # RESTORED: This is the specific layout you liked (Blue Box)
         if "PASS" not in st.session_state.feedback:
-            # Markdown wrapper for better mobile wrapping
-            st.markdown(f"**Correct Answer:**\n\n_{correct_answer}_")
+            st.info(f"**Correct Answer:**\n{correct_answer}")
 
     if st.button("Next Question ->", type="primary", use_container_width=True):
         new_question()
