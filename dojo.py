@@ -1,7 +1,8 @@
 import streamlit as st
 from openai import OpenAI
-from streamlit_gsheets import GSheetsConnection
+import pandas as pd
 import random
+import time
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -10,7 +11,11 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. MOBILE-OPTIMIZED CSS ---
+# --- 2. CONFIGURATION ---
+# !!! PASTE YOUR FULL GOOGLE SHEET URL BELOW !!!
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1gtz95NNWYXmyG8a0s7cwg8e9kGa5rXyXmes1Gs67KTw/edit?gid=0#gid=0" 
+
+# --- 3. STYLING (Full Desktop & Mobile Support) ---
 st.markdown("""
     <style>
     /* Prevent iOS Zoom on focus */
@@ -18,26 +23,28 @@ st.markdown("""
         font-size: 16px !important;
     }
     
-    /* Better Header Styling */
     h1, h2, h3 {
         color: #1E90FF !important; 
         font-family: 'Arial', sans-serif;
     }
     
-    /* Mobile-Friendly Buttons */
     div.stButton > button {
         background-color: #1E90FF !important;
         color: white !important;
-        border-radius: 8px; /* Softer corners for mobile */
+        border-radius: 8px;
         border: none;
         font-weight: bold;
-        height: 55px; /* Taller for touch targets */
-        font-size: 18px !important;
+        transition: all 0.3s ease;
+        font-size: 18px !important; /* Larger for mobile tap */
+        height: 60px; /* Taller for mobile tap */
         width: 100%;
     }
     
-    div.stButton > button:active {
-        background-color: #0056b3 !important;
+    div.stButton > button:hover {
+        background-color: #4da6ff !important;
+        box-shadow: 0 0 12px rgba(30, 144, 255, 0.6);
+        transform: translateY(-1px);
+        color: white !important;
     }
 
     #MainMenu {visibility: hidden;}
@@ -45,7 +52,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. AUTHENTICATION ---
+# --- 4. AUTHENTICATION ---
 try:
     api_key = st.secrets["OPENAI_API_KEY"]
     client = OpenAI(api_key=api_key)
@@ -53,25 +60,35 @@ except:
     st.error("⚠️ API Key required in Secrets.")
     st.stop()
 
-# --- 4. LOAD DATA (MOBILE FIXED) ---
-@st.cache_data(ttl=600) # Cache for 10 mins to prevent Mobile Timeouts
-def load_knowledge_base():
+# --- 5. LOAD DATA (The Mobile Fix) ---
+@st.cache_data(ttl=600)
+def load_knowledge_base(url):
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        # ttl=600 prevents constant reloading which kills mobile data
-        df = conn.read(ttl=600) 
+        # 1. Convert "Edit" link to "Export" link
+        if "/edit" in url:
+            export_url = url.replace("/edit#gid=", "/export?format=csv&gid=")
+            # Catch generic links without GID
+            if "/edit" in export_url:
+                export_url = url.split("/edit")[0] + "/export?format=csv"
+        else:
+            export_url = url
+
+        # 2. Read directly with Pandas (Instant load, no handshake)
+        df = pd.read_csv(export_url)
+        
+        # 3. Convert to Dictionary
         data_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
         return data_dict
-    except:
+    except Exception as e:
         return None
 
-KNOWLEDGE_BASE = load_knowledge_base()
+KNOWLEDGE_BASE = load_knowledge_base(SHEET_URL)
 
 if not KNOWLEDGE_BASE:
-    st.error("⚠️ Database Error. Reload the page.")
+    st.error("⚠️ Connection Error. \n\n1. Make sure your Google Sheet is set to 'Anyone with the link' -> 'Viewer'.\n2. Paste the link in Line 14.")
     st.stop()
 
-# --- 5. SESSION STATE ---
+# --- 6. SESSION STATE ---
 if 'current_q' not in st.session_state:
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
 if 'answer_submitted' not in st.session_state:
@@ -92,9 +109,9 @@ def new_question():
     st.session_state.answer_submitted = False 
     st.session_state.show_balloons = False
 
-# --- 6. HEADER ---
-st.title("🦅 Warrior Dojo")
-st.caption("Det 925 Training Assistant")
+# --- 7. HEADER ---
+st.title("🦅 Warrior Knowledge Dojo")
+st.markdown("**Det 925 Training Assistant**")
 st.divider()
 
 target_quote_name = st.session_state.current_q
@@ -105,31 +122,30 @@ if target_quote_name not in KNOWLEDGE_BASE:
 correct_answer = KNOWLEDGE_BASE[target_quote_name]
 st.subheader(target_quote_name)
 
-# --- 7. LOGIC LOOP ---
+# --- 8. LOGIC LOOP ---
 if not st.session_state.answer_submitted:
-    with st.form(key='dojo_form', clear_on_submit=False):
-        # Height=150 makes it easier to tap on phones
-        user_attempt = st.text_area("Your Answer:", height=150)
-        
+    with st.form(key='dojo_form'):
+        # Height 150 prevents keyboard covering text on mobile
+        user_attempt = st.text_area("Type the quote:", height=150)
         col1, col2 = st.columns(2)
         with col1:
-            skip_pressed = st.form_submit_button("Skip")
+            skip_pressed = st.form_submit_button("Skip", use_container_width=True)
         with col2:
-            submit_pressed = st.form_submit_button("Submit")
+            submit_pressed = st.form_submit_button("Submit", use_container_width=True)
 
     if skip_pressed:
         new_question()
         st.rerun()
 
     if submit_pressed:
-        if not user_attempt.strip():
-            st.warning("Silence is not an answer, Cadet.")
+        if not user_attempt:
+            st.error("SILENCE IS NOT AN ANSWER, CADET.")
         else:
             st.session_state.answer_submitted = True
             
-            with st.spinner("Drill Sergeant is thinking..."):
+            with st.spinner("Evaluating..."):
                 try:
-                    # --- 1. RAGE METER (Content Preserved) ---
+                    # --- RAGE METER (Restored) ---
                     streak = st.session_state.wrong_streak
                     rage_text = ""
                     if streak == 0:
@@ -141,7 +157,7 @@ if not st.session_state.answer_submitted:
                     else:
                         rage_text = "Context: Failed " + str(streak) + " times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
 
-                    # --- 2. PERSONALITY ENGINE (Content Preserved) ---
+                    # --- PERSONALITY ENGINE (Restored) ---
                     roll = random.uniform(0, 100)
                     persona_text = ""
                     
@@ -165,7 +181,7 @@ if not st.session_state.answer_submitted:
                         selected_lore = random.choice(lore_options)
                         persona_text = "Style: DETACHMENT LORE. Reference: " + selected_lore
 
-                    # --- 3. PROMPT CONSTRUCTION ---
+                    # --- PROMPT CONSTRUCTION (Restored) ---
                     prompt = "You are a Drill Sergeant grading a Cadet.\n"
                     prompt += "1. EVALUATE THE INPUT:\n"
                     prompt += "- CATEGORY A (PASS): Input is correct. Ignore caps/punctuation/typos. ACTION: You MUST use the word 'PASS'. Be brief.\n"
@@ -176,7 +192,7 @@ if not st.session_state.answer_submitted:
                     prompt += "3. PERSONALITY:\n" + persona_text + "\n\n"
                     prompt += "4. CONSTRAINT: Be a ONE-LINER. Short, punchy."
 
-                    # Safe String Construction for Mobile Stability
+                    # --- SAFE EXECUTION ---
                     user_content_str = "Correct Quote: " + str(correct_answer) + "\n\nCadet Input: " + str(user_attempt)
 
                     response = client.chat.completions.create(
@@ -203,7 +219,7 @@ if not st.session_state.answer_submitted:
                         st.session_state.wrong_streak += 1
                 
                 except Exception as e:
-                    st.error(f"System Error: {e}")
+                    st.error(f"Error: {e}")
                     st.session_state.answer_submitted = False
             
             st.rerun()
@@ -217,13 +233,17 @@ else:
     else:
         st.error(st.session_state.feedback)
         if "PASS" not in st.session_state.feedback:
-            # Uses markdown for better wrapping on small screens
+            # Markdown wrapper for better mobile wrapping
             st.markdown(f"**Correct Answer:**\n\n_{correct_answer}_")
 
-    if st.button("Next Question ->", type="primary"):
+    if st.button("Next Question ->", type="primary", use_container_width=True):
         new_question()
         st.rerun()
 
 # --- FOOTER ---
 st.divider()
-st.caption("Cadet-developed study tool. Unaffiliated with the USAF.")
+st.markdown("""
+<div style="text-align: center; color: gray; font-size: 0.8em;">
+    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force.
+</div>
+""", unsafe_allow_html=True)
