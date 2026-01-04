@@ -3,6 +3,7 @@ from openai import OpenAI
 from streamlit_gsheets import GSheetsConnection
 import random
 import time
+import pandas as pd # Added pandas for easier column handling
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -46,24 +47,41 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 
-# --- 4. LOAD DATA FROM GOOGLE SHEETS ---
+# --- 4. LOAD DATA FROM GOOGLE SHEETS (UPDATED FOR IMAGES) ---
 @st.cache_data(ttl=60)
 def load_knowledge_base():
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
         df = conn.read(ttl=0)
+        
+        # 1. Create the standard Question -> Answer dictionary
+        # We assume Col 0 is Question, Col 1 is Answer
         data_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
-        return data_dict
-    except Exception as e:
-        return None
+        
+        # 2. Create the Question -> Image URL dictionary
+        # We look for a column specifically named "Image_URL"
+        if "Image_URL" in df.columns:
+            # Fill NaN values with empty strings to prevent errors
+            df["Image_URL"] = df["Image_URL"].fillna("")
+            image_dict = dict(zip(df.iloc[:, 0], df["Image_URL"]))
+        else:
+            # If the column doesn't exist yet, return an empty dict
+            image_dict = {}
+            
+        return data_dict, image_dict
 
-kb_data = load_knowledge_base()
+    except Exception as e:
+        return None, None
+
+# Unpack the two dictionaries
+kb_data, img_data = load_knowledge_base()
 
 if not kb_data:
     st.error("⚠️ Connection Error: Check your Secrets and Google Sheet sharing settings.")
     st.stop()
 
 KNOWLEDGE_BASE = kb_data
+IMAGE_BASE = img_data
 
 # --- 5. SESSION STATE INITIALIZATION ---
 if 'current_q' not in st.session_state:
@@ -103,7 +121,18 @@ if target_quote_name not in KNOWLEDGE_BASE:
 
 correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
+# --- DISPLAY QUESTION & OPTIONAL IMAGE ---
 st.subheader(target_quote_name)
+
+# NEW LOGIC: Check if this question has an associated image
+if target_quote_name in IMAGE_BASE:
+    image_url = IMAGE_BASE[target_quote_name]
+    # Check if the URL is valid (not empty and starts with http)
+    if image_url and str(image_url).strip() != "" and str(image_url).startswith("http"):
+        try:
+            st.image(image_url, caption="Visual Identification Required", use_container_width=True)
+        except:
+            st.warning(f"Could not load image. Link might be broken: {image_url}")
 
 # --- 7. MAIN LOGIC LOOP ---
 
@@ -200,10 +229,10 @@ if not st.session_state.answer_submitted:
                             "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
                             "Tell them to focus before they rear-end someone in the Culver's drive-through.",
                             "Scream an obnoxious Area Greeting at them. e.g. Area, greet the clown who doesn't study Warrior Knowledge!",
-                            "Tell them they are slower than an Old Ginger."
-                            "Tell them LLAB just got moved back to 0600 because of them."
-                            "Tell them we're bringing alligator crawls back to PT because of them."
-                            "Tell them that our Special Guest would like a word with them."
+                            "Tell them they are slower than an Old Ginger.",
+                            "Tell them LLAB just got moved back to 0600 because of them.",
+                            "Tell them we're bringing alligator crawls back to PT because of them.",
+                            "Tell them that our Special Guest would like a word with them.",
                             "Tell them LLABs got extended back to four hours because of their incompetence."
                         ]
                         selected_lore = random.choice(lore_options)
