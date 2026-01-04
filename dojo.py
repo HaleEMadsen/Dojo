@@ -24,8 +24,8 @@ st.markdown("""
         font-size: 16px !important;
     }
     
-    /* 3. BUTTON STYLING (Electric Blue) */
-    /* This targets ALL buttons, including Next, Skip, and Submit */
+    /* 3. BUTTON STYLING (Global Electric Blue) */
+    /* This targets ALL buttons in the app */
     div.stButton > button {
         background-color: #1E90FF !important;
         color: white !important;
@@ -37,6 +37,12 @@ st.markdown("""
     }
     div.stButton > button:hover {
         background-color: #104E8B !important;
+        color: white !important;
+    }
+    
+    /* Remove default focus borders that might look weird */
+    div.stButton > button:focus {
+        box-shadow: none !important;
         color: white !important;
     }
 
@@ -106,21 +112,15 @@ st.subheader(target_quote_name)
 # --- 7. LOGIC LOOP ---
 if not st.session_state.answer_submitted:
     with st.form(key='dojo_form'):
-        # Tip for user
-        st.caption("Press **Ctrl+Enter** to Submit.")
         user_attempt = st.text_area("Your Answer:", height=150)
         
         col1, col2 = st.columns(2)
         
-        # --- KEYBOARD SHORTCUT FIX ---
-        # We define "Submit" (Right Column) FIRST so Ctrl+Enter triggers it.
-        # We define "Skip" (Left Column) SECOND.
-        
-        with col2:
-            submit_pressed = st.form_submit_button("Submit", use_container_width=True)
-            
+        # SKIP on Left, SUBMIT on Right
         with col1:
             skip_pressed = st.form_submit_button("Skip", use_container_width=True)
+        with col2:
+            submit_pressed = st.form_submit_button("Submit", use_container_width=True)
 
     if skip_pressed:
         new_question()
@@ -162,7 +162,7 @@ if not st.session_state.answer_submitted:
                             "Ask if they are trying to flood the Det bathroom again.",
                             "Tell them this effort is weaker than the dining-in horseradish.",
                             "Scream an obnoxious Area Greeting at them. e.g. Area, greet the dweeb who doesn't study Warrior Knowledge!",
-                            "Tell them they are  slower than an Old Ginger.",
+                            "Tell them they are slower than an Old Ginger.",
                             "Tell them their nonsense is more hazardous than a Culver's drive-through."
                         ]
                         persona_text = "Style: DETACHMENT LORE. Reference: " + random.choice(lore_options)
@@ -222,17 +222,10 @@ else:
         if "PASS" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n\n_{correct_answer}_")
 
-    # --- NEXT BUTTON SHORTCUT FIX ---
-    # We wrap this button in a form so Ctrl+Enter triggers it automatically
-    with st.form(key='next_form', border=False):
-        # We put a caption to let them know
-        st.caption("Press **Ctrl+Enter** for Next Question.")
-        
-        # --- FIX: REMOVED type="primary" ---
-        # Removing 'type="primary"' allows the CSS at the top to color this Electric Blue
-        if st.form_submit_button("Next Question ->", use_container_width=True):
-            new_question()
-            st.rerun()
+    # --- NEXT BUTTON (Standard Button, CSS handles Color) ---
+    if st.button("Next Question ->", use_container_width=True):
+        new_question()
+        st.rerun()
 
 # --- FOOTER ---
 st.divider()
