@@ -153,7 +153,7 @@ if not st.session_state.answer_submitted:
                     # --- PROBABILITY ENGINE ---
                     roll = random.uniform(0, 100)
                     
-                    # Base Prompt (UPDATED FOR NEW THRESHOLDS)
+                    # Base Prompt
                     base_instruction = f"""
                     You are a Drill Sergeant grading a Cadet.
                     
@@ -198,56 +198,4 @@ if not st.session_state.answer_submitted:
                         lore_options = [
                             "Ask if they are trying to flood the Det bathroom again.",
                             "Tell them this effort is weaker than the dining-in horseradish.",
-                            "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
-                            "Tell them to focus before they rear-end someone in the Culver's drive-through.",
-                            "Scream an obnoxious Area Greeting at them.",
-                            "Tell them they are moving slower than the Old Ginger."
-                        ]
-                        selected_lore = random.choice(lore_options)
-                        persona_instruction = f"Style: DETACHMENT LORE. Reference: {selected_lore}"
-
-                    # Call AI
-                    final_prompt = f"{base_instruction}\n\n{persona_instruction}"
-                    
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        temperature=1.3, 
-                        messages=[
-                            {"role": "system", "content": final_prompt},
-                            {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
-                        ],
-                        max_tokens=100
-                    )
-                    
-                    feedback_text = response.choices[0].message.content
-                    st.session_state.feedback = feedback_text
-                    
-                    if "PASS" in feedback_text:
-                        st.session_state.feedback_type = "success"
-                        if st.session_state.wrong_streak >= 4:
-                            st.session_state.show_balloons = True
-                        else:
-                            st.session_state.show_balloons = False
-                        st.session_state.wrong_streak = 0
-                    else:
-                        st.session_state.feedback_type = "error"
-                        st.session_state.show_balloons = False
-                        st.session_state.wrong_streak += 1
-                
-                except Exception as e:
-                    st.error(f"Error: {e}")
-                    st.session_state.answer_submitted = False
-            
-            st.rerun()
-
-# STATE B: RESULT MODE (User has submitted)
-else:
-    # Display Feedback
-    if st.session_state.feedback_type == "success":
-        st.success(st.session_state.feedback)
-        if st.session_state.show_balloons:
-            st.balloons()
-    else:
-        st.error(st.session_state.feedback)
-        if "PASS" not in st.session_state.feedback:
-            st.info(f"**Correct Answer:**\n{correct_answer}")
+                            "Tell them to fix it before they end up in the hospital at Special Warfare PT
