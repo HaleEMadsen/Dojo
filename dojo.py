@@ -115,10 +115,9 @@ if submit_pressed:
         with st.spinner("Evaluating..."):
             try:
                 # --- PROBABILITY ENGINE (PYTHON CONTROLLED) ---
-                # We roll a die from 0 to 100 to decide the personality rigidly.
                 roll = random.uniform(0, 100)
                 
-                # Base Prompt (Shared instructions)
+                # Base Prompt
                 base_instruction = """
                 You are a Drill Sergeant grading a Cadet.
                 If input is Perfect or has tiny typos -> You MUST use the word "PASS".
@@ -133,11 +132,20 @@ if submit_pressed:
                 
                 elif roll < 85: 
                     # 65% - 85% (Gen Z Brainrot) - 20% Chance
-                    persona_instruction = "Style: GEN Z BRAINROT. You MUST use words like 'skibidi', 'sigma', 'rizz', 'cap', 'fanum tax', or 'caught in 4k'. Mix military discipline with brainrot slang."
+                    # Expanded vocabulary list to prevent repetition
+                    persona_instruction = """
+                    Style: GEN Z BRAINROT. You MUST use modern slang.
+                    Pick ONE OR TWO from this list (don't use 'caught in 4k' every time):
+                    - skibidi / sigma / rizz / fanum tax / ohio
+                    - cap / no cap / bet / lowkey / highkey
+                    - L + ratio / goated / opps / crashout
+                    - delulu / chat is this real / let him cook
+                    Mix this with military discipline. It should sound unnatural and jarring.
+                    """
                 
                 elif roll < 90:
                     # 85% - 90% (Wisconsin) - 5% Chance
-                    persona_instruction = "Style: WISCONSIN LOCAL. Briefly mention cheese curds, frozen lakes, or Spotted Cow beer."
+                    persona_instruction = "Style: WISCONSIN LOCAL. Briefly mention cheese curds, frozen lakes, Culver's, or Spotted Cow beer."
                 
                 elif roll < 94:
                     # 90% - 94% (Unbroken Badger) - 4% Chance
@@ -145,14 +153,13 @@ if submit_pressed:
                 
                 else:
                     # 94% - 100% (Det Lore) - 6% Chance
-                    # We pick one specific lore item randomly
                     lore_options = [
                         "Ask if they are trying to flood the Det bathroom again.",
                         "Tell them this effort is weaker than the dining-in horseradish.",
                         "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
                         "Tell them to focus before they rear-end someone in the Culver's drive-through.",
                         "Scream an obnoxious Area Greeting at them.",
-                        "Tell them they are slower than the old Ginger but not as wise."
+                        "Tell them they are moving slower than the Old Ginger."
                     ]
                     selected_lore = random.choice(lore_options)
                     persona_instruction = f"Style: DETACHMENT LORE. Specifically reference this event: {selected_lore}"
@@ -163,7 +170,7 @@ if submit_pressed:
                 # Call AI
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
-                    temperature=1.2, 
+                    temperature=1.3, # Increased to 1.3 for maximum chaos
                     messages=[
                         {"role": "system", "content": final_system_prompt},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
@@ -198,4 +205,3 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
-
