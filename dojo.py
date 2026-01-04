@@ -2,6 +2,7 @@ import streamlit as st
 from openai import OpenAI
 from streamlit_gsheets import GSheetsConnection
 import random
+import time
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -118,19 +119,19 @@ if not st.session_state.answer_submitted:
             
             with st.spinner("Evaluating..."):
                 try:
-                    # --- 1. RAGE METER (Fully Restored) ---
+                    # --- 1. RAGE METER ---
                     streak = st.session_state.wrong_streak
                     rage_text = ""
                     if streak == 0:
                         rage_text = "Context: First attempt. Be professional."
                     elif streak < 3:
-                        rage_text = f"Context: Failed {streak} times. Get ANNOYED/STERN."
+                        rage_text = "Context: Failed " + str(streak) + " times. Get ANNOYED/STERN."
                     elif streak < 5:
-                        rage_text = f"Context: Failed {streak} times. BE VERY MAD. YELL (Caps)."
+                        rage_text = "Context: Failed " + str(streak) + " times. BE VERY MAD. YELL (Caps)."
                     else:
-                        rage_text = f"Context: Failed {streak} times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
+                        rage_text = "Context: Failed " + str(streak) + " times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
 
-                    # --- 2. PERSONALITY ENGINE (Fully Restored) ---
+                    # --- 2. PERSONALITY ENGINE ---
                     roll = random.uniform(0, 100)
                     persona_text = ""
                     
@@ -139,9 +140,9 @@ if not st.session_state.answer_submitted:
                     elif roll < 85:
                         persona_text = "Style: GEN Z BRAINROT. Use: skibidi, sigma, rizz, fanum tax, no cap, bet, lowkey, L + ratio, goated, opps, crashout, delulu, let him cook."
                     elif roll < 90:
-                        persona_text = "Style: WISCONSIN LOCAL. Mention cheese curds, frozen lakes, Culver's, Badgers, Ohio State, Minnesota Golfers, or Spotted Cow."
+                        persona_text = "Style: WISCONSIN LOCAL. Mention cheese curds, frozen lakes, Culver's, or Spotted Cow."
                     elif roll < 94:
-                        persona_text = "Style: COMMANDER'S CHALLENGE. Threaten them with the 'Unbroken Badger."
+                        persona_text = "Style: COMMANDER'S CHALLENGE. Threaten them with the 'Unbroken Badger' workout."
                     else:
                         lore_options = [
                             "Ask if they are trying to flood the Det bathroom again.",
@@ -152,12 +153,72 @@ if not st.session_state.answer_submitted:
                             "Tell them they are moving slower than the Old Ginger."
                         ]
                         selected_lore = random.choice(lore_options)
-                        persona_text = f"Style: DETACHMENT LORE. Reference: {selected_lore}"
+                        persona_text = "Style: DETACHMENT LORE. Reference: " + selected_lore
 
-                    # --- 3. PROMPT CONSTRUCTION (Safe Concatenation Method) ---
-                    # We rebuild the complex prompt line-by-line to avoid syntax errors
+                    # --- 3. PROMPT CONSTRUCTION ---
                     prompt = "You are a Drill Sergeant grading a Cadet.\n"
-                    
                     prompt += "1. EVALUATE THE INPUT:\n"
                     prompt += "- CATEGORY A (PASS): Input is correct. Ignore caps/punctuation/typos. ACTION: You MUST use the word 'PASS'. Be brief.\n"
-                    prompt += "- CATEGORY B (NEAR MISS): Input is 80% correct but sloppy. ACTION: Do
+                    prompt += "- CATEGORY B (NEAR MISS): Input is 80% correct but sloppy. ACTION: Do NOT use 'PASS'. TONE: Stern/Corrective. 'Tighten it up'. DO NOT ROAST YET (unless streak is high).\n"
+                    prompt += "- CATEGORY C (PROFANITY/INSUBORDINATION): Input has swear words/backtalk. ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them.\n"
+                    prompt += "- CATEGORY D (TOTAL FAILURE): Input is wrong. ACTION: Do NOT use 'PASS'. TONE: Roast them.\n\n"
+                    prompt += "2. STREAK CONTEXT:\n" + rage_text + "\n\n"
+                    prompt += "3. PERSONALITY:\n" + persona_text + "\n\n"
+                    prompt += "4. CONSTRAINT: Be a ONE-LINER. Short, punchy."
+
+                    # --- 4. SAFE MESSAGE CONSTRUCTION (The Fix) ---
+                    # We define the user message OUTSIDE the dictionary to prevent syntax errors
+                    user_content_str = "Correct Quote: " + str(correct_answer) + "\n\nCadet Input: " + str(user_attempt)
+
+                    # Call AI
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        temperature=1.3, 
+                        messages=[
+                            {"role": "system", "content": prompt},
+                            {"role": "user", "content": user_content_str}
+                        ],
+                        max_tokens=100
+                    )
+                    
+                    feedback_text = response.choices[0].message.content
+                    st.session_state.feedback = feedback_text
+                    
+                    if "PASS" in feedback_text:
+                        st.session_state.feedback_type = "success"
+                        if st.session_state.wrong_streak >= 4:
+                            st.session_state.show_balloons = True
+                        st.session_state.wrong_streak = 0
+                    else:
+                        st.session_state.feedback_type = "error"
+                        st.session_state.show_balloons = False
+                        st.session_state.wrong_streak += 1
+                
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    st.session_state.answer_submitted = False
+            
+            st.rerun()
+
+else:
+    # RESULT SCREEN
+    if st.session_state.feedback_type == "success":
+        st.success(st.session_state.feedback)
+        if st.session_state.show_balloons:
+            st.balloons()
+    else:
+        st.error(st.session_state.feedback)
+        if "PASS" not in st.session_state.feedback:
+            st.info(f"**Correct Answer:**\n{correct_answer}")
+
+    if st.button("Next Question ->", type="primary", use_container_width=True):
+        new_question()
+        st.rerun()
+
+# --- FOOTER ---
+st.divider()
+st.markdown("""
+<div style="text-align: center; color: gray; font-size: 0.8em;">
+    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force.
+</div>
+""", unsafe_allow_html=True)
