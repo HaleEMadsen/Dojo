@@ -10,20 +10,35 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. CSS STYLING (Original Desktop Style) ---
+# --- 2. CSS STYLING (The Look You Wanted) ---
 st.markdown("""
     <style>
+    /* 1. FORCE ELECTRIC BLUE HEADERS */
+    h1, h2, h3 {
+        color: #1E90FF !important; 
+        font-family: 'Arial', sans-serif;
+    }
+    
+    /* 2. FORCE TEXT AREA FONT SIZE */
     .stTextArea textarea {
         font-size: 16px !important;
     }
+    
+    /* 3. BUTTON STYLING (Electric Blue) */
     div.stButton > button {
-        background-color: #1E90FF;
-        color: white;
-        width: 100%;
-        border-radius: 5px;
-        height: 50px;
+        background-color: #1E90FF !important;
+        color: white !important;
+        border-radius: 8px;
+        border: none;
         font-weight: bold;
+        height: 50px;
+        font-size: 18px;
     }
+    div.stButton > button:hover {
+        background-color: #104E8B !important;
+        color: white !important;
+    }
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     </style>
@@ -37,16 +52,13 @@ except:
     st.error("⚠️ API Key required in Secrets.")
     st.stop()
 
-# --- 4. LOAD DATA (Original Method) ---
-# This uses the official GSheets connection which is more stable on Desktop
+# --- 4. LOAD DATA (Original Stable Desktop Method) ---
 @st.cache_data(ttl=600)
 def load_knowledge_base():
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
         df = conn.read()
-        # Assumes Column A is Quote, Column B is Answer
-        data_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
-        return data_dict
+        return dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
     except Exception as e:
         return None
 
@@ -79,7 +91,7 @@ def new_question():
 
 # --- 6. HEADER ---
 st.title("🦅 Warrior Knowledge Dojo")
-st.caption("Det 925 Training Assistant")
+st.markdown("**Det 925 Training Assistant**")
 st.divider()
 
 target_quote_name = st.session_state.current_q
@@ -111,10 +123,10 @@ if not st.session_state.answer_submitted:
         else:
             st.session_state.answer_submitted = True
             
-            # This Spinner was the mobile killer, but it looks great on Desktop
+            # --- SPINNER RESTORED (Desktop Friendly) ---
             with st.spinner("Drill Sergeant is grading you..."):
                 try:
-                    # --- 1. RAGE METER ---
+                    # --- RAGE & LORE ---
                     streak = st.session_state.wrong_streak
                     rage_text = ""
                     if streak == 0:
@@ -126,7 +138,7 @@ if not st.session_state.answer_submitted:
                     else:
                         rage_text = "Context: Failed " + str(streak) + " times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
 
-                    # --- 2. PERSONALITY ENGINE ---
+                    # --- PERSONALITY ---
                     roll = random.uniform(0, 100)
                     persona_text = ""
                     
@@ -150,7 +162,7 @@ if not st.session_state.answer_submitted:
                         selected_lore = random.choice(lore_options)
                         persona_text = "Style: DETACHMENT LORE. Reference: " + selected_lore
 
-                    # --- 3. PROMPT CONSTRUCTION (With Phonetic Grading Fix) ---
+                    # --- GRADING PROMPT (Phonetic Mode Kept) ---
                     prompt = "You are a Drill Sergeant grading a Cadet.\n"
                     prompt += "1. GRADING RULES (PHONETIC MODE):\n"
                     prompt += "- CRITICAL: Ignore capitalization, punctuation, and spelling errors.\n"
@@ -194,20 +206,26 @@ if not st.session_state.answer_submitted:
             st.rerun()
 
 else:
-    # --- RESULT SCREEN (Original Blue Box Layout) ---
+    # --- RESULT SCREEN (Original Layout) ---
     if st.session_state.feedback_type == "success":
         st.success(st.session_state.feedback)
         if st.session_state.show_balloons:
             st.balloons()
     else:
         st.error(st.session_state.feedback)
+        # Blue Box for Answer
         if "PASS" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n\n_{correct_answer}_")
 
-    if st.button("Next Question ->", type="primary"):
+    # --- RESTORED NEXT BUTTON (Full Width) ---
+    if st.button("Next Question ->", type="primary", use_container_width=True):
         new_question()
         st.rerun()
 
-# --- FOOTER ---
+# --- FOOTER (Restored Text) ---
 st.divider()
-st.caption("Cadet-developed study tool. Unaffiliated with the USAF.")
+st.markdown("""
+<div style="text-align: center; color: gray; font-size: 0.8em;">
+    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force.
+</div>
+""", unsafe_allow_html=True)
