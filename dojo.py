@@ -110,7 +110,7 @@ st.subheader(target_quote_name)
 # STATE A: INPUT MODE (User has NOT submitted yet)
 if not st.session_state.answer_submitted:
     with st.form(key='dojo_form'):
-        user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
+        user_attempt = st.text_area("Type your answer:", height=120)
         col1, col2 = st.columns(2)
         with col1:
             skip_pressed = st.form_submit_button("Skip", use_container_width=True)
@@ -264,4 +264,5 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
