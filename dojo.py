@@ -2,6 +2,7 @@ import streamlit as st
 from openai import OpenAI
 from streamlit_gsheets import GSheetsConnection
 import random
+import time
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -68,7 +69,6 @@ KNOWLEDGE_BASE = kb_data
 if 'current_q' not in st.session_state:
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
 
-# New state variables for button logic and rage meter
 if 'answer_submitted' not in st.session_state:
     st.session_state.answer_submitted = False
 
@@ -85,7 +85,7 @@ def new_question():
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
     st.session_state.feedback = ""
     st.session_state.feedback_type = ""
-    st.session_state.answer_submitted = False # Reset UI to input mode
+    st.session_state.answer_submitted = False 
 
 # --- 6. THE UI HEADER ---
 st.title("🦅 Warrior Knowledge Dojo")
@@ -93,11 +93,10 @@ st.markdown("**Det 925 Training Assistant**")
 st.divider()
 
 if not KNOWLEDGE_BASE:
-    st.error("The Knowledge Base is empty! Add rows to your Google Sheet.")
+    st.error("The Knowledge Base is empty!")
     st.stop()
 
 target_quote_name = st.session_state.current_q
-# Safety check if sheet changed
 if target_quote_name not in KNOWLEDGE_BASE:
     new_question()
     target_quote_name = st.session_state.current_q
@@ -106,9 +105,9 @@ correct_answer = KNOWLEDGE_BASE[target_quote_name]
 
 st.subheader(target_quote_name)
 
-# --- 7. LOGIC SPLIT: INPUT MODE vs RESULT MODE ---
+# --- 7. MAIN LOGIC LOOP ---
 
-# STATE A: User has NOT submitted yet
+# STATE A: INPUT MODE (User has NOT submitted yet)
 if not st.session_state.answer_submitted:
     with st.form(key='dojo_form'):
         user_attempt = st.text_area("Type the quote (Ctrl+Enter to Submit):", height=120)
@@ -126,7 +125,7 @@ if not st.session_state.answer_submitted:
         if not user_attempt:
             st.error("SILENCE IS NOT AN ANSWER, CADET.")
         else:
-            # Mark as submitted to flip the UI
+            # Flip state to submitted
             st.session_state.answer_submitted = True
             
             with st.spinner("Evaluating..."):
@@ -155,36 +154,24 @@ if not st.session_state.answer_submitted:
                     {rage_instruction}
                     - IF THEY PASS NOW and the streak was high (4+): Acknowledge they finally stopped embarrassing themselves.
                     
-                    3. ONE-LINER CONSTRAINT:
-                    Be short, punchy, shocking. Never explain the error.
+                    3. CONSTRAINT:
+                    Be a ONE-LINER. Short, punchy, shocking. Never explain the error.
                     """
                     
-                    # Personality Logic Tree
+                    # Personality Logic
                     if roll < 65: 
                         persona_instruction = "Style: Standard Strict MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese."
-                    
                     elif roll < 85: 
-                        # Gen Z Brainrot (20%)
                         persona_instruction = """
                         Style: GEN Z BRAINROT. You MUST use modern slang.
-                        Pick ONE OR TWO from this list (don't use 'caught in 4k' every time):
-                        - skibidi / sigma / rizz / fanum tax / ohio
-                        - cap / no cap / bet / lowkey / highkey
-                        - L + ratio / goated / opps / crashout
-                        - delulu / chat is this real / let him cook
-                        Mix this with military discipline. It should sound unnatural and jarring.
+                        Pick ONE OR TWO: skibidi, sigma, rizz, fanum tax, ohio, cap, no cap, bet, lowkey, highkey, L + ratio, goated, opps, crashout, delulu, let him cook.
+                        Mix this with military discipline. It should sound unnatural.
                         """
-                    
                     elif roll < 90:
-                        # Wisconsin (5%)
                         persona_instruction = "Style: WISCONSIN LOCAL. Briefly mention cheese curds, frozen lakes, Culver's, or Spotted Cow beer."
-                    
                     elif roll < 94:
-                        # Unbroken Badger (4%)
                         persona_instruction = "Style: COMMANDER'S CHALLENGE. Reference the 'Unbroken Badger' fitness challenge as a punishment or goal."
-                    
                     else:
-                        # Det Lore (6%)
                         lore_options = [
                             "Ask if they are trying to flood the Det bathroom again.",
                             "Tell them this effort is weaker than the dining-in horseradish.",
@@ -194,17 +181,16 @@ if not st.session_state.answer_submitted:
                             "Tell them they are moving slower than the Old Ginger."
                         ]
                         selected_lore = random.choice(lore_options)
-                        persona_instruction = f"Style: DETACHMENT LORE. Specifically reference this event: {selected_lore}"
-
-                    # Combine instructions
-                    final_system_prompt = f"{base_instruction}\n\n{persona_instruction}"
+                        persona_instruction = f"Style: DETACHMENT LORE. Reference: {selected_lore}"
 
                     # Call AI
+                    final_prompt = f"{base_instruction}\n\n{persona_instruction}"
+                    
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         temperature=1.3, 
                         messages=[
-                            {"role": "system", "content": final_system_prompt},
+                            {"role": "system", "content": final_prompt},
                             {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                         ],
                         max_tokens=100
@@ -213,37 +199,38 @@ if not st.session_state.answer_submitted:
                     feedback_text = response.choices[0].message.content
                     st.session_state.feedback = feedback_text
                     
-                    # Update Streak Logic based on AI's decision
                     if "PASS" in feedback_text:
                         st.session_state.feedback_type = "success"
-                        st.session_state.wrong_streak = 0 # Reset streak on pass
+                        st.session_state.wrong_streak = 0
                     else:
                         st.session_state.feedback_type = "error"
-                        st.session_state.wrong_streak += 1 # Increment streak on fail
+                        st.session_state.wrong_streak += 1
+                
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    st.session_state.answer_submitted = False
             
-            except Exception as e:
-                st.error(f"Error: {e}")
-                st.session_state.answer_submitted = False # Reset if error so they can try again
-            
+            # Force Reload to show feedback state
             st.rerun()
 
-# STATE B: User HAS submitted (Show Result & Next Button)
+# STATE B: RESULT MODE (User has submitted)
 else:
-    # Display the feedback calculated in the previous run
+    # Display Feedback
     if st.session_state.feedback_type == "success":
         st.success(st.session_state.feedback)
         if "PASS" in st.session_state.feedback:
             st.balloons()
     else:
         st.error(st.session_state.feedback)
-        st.info(f"**Correct Answer:**\n{correct_answer}")
+        if "PASS" not in st.session_state.feedback:
+            st.info(f"**Correct Answer:**\n{correct_answer}")
 
-    # The "Next" Button
+    # Next Button
     if st.button("Next Question ->", type="primary", use_container_width=True):
         new_question()
         st.rerun()
 
-# --- 9. FOOTER ---
+# --- 8. FOOTER ---
 st.divider()
 st.markdown("""
 <div style="text-align: center; color: gray; font-size: 0.8em;">
