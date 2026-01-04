@@ -10,7 +10,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 2. CSS STYLING (The Look You Wanted) ---
+# --- 2. CSS STYLING ---
 st.markdown("""
     <style>
     /* 1. FORCE ELECTRIC BLUE HEADERS */
@@ -19,14 +19,14 @@ st.markdown("""
         font-family: 'Arial', sans-serif;
     }
     
-    /* 2. FORCE TEXT AREA FONT SIZE */
+    /* 2. FORCE TEXT AREA FONT SIZE (Desktop) */
     .stTextArea textarea {
         font-size: 16px !important;
     }
     
-    /* 3. BUTTON STYLING (Electric Blue) */
+    /* 3. BUTTON STYLING (Electric Blue for Skip/Submit/Next) */
     div.stButton > button {
-        background-color: #1E90FF !important;
+        background-color: #1E90FF !important; /* Electric Blue */
         color: white !important;
         border-radius: 8px;
         border: none;
@@ -35,7 +35,7 @@ st.markdown("""
         font-size: 18px;
     }
     div.stButton > button:hover {
-        background-color: #104E8B !important;
+        background-color: #104E8B !important; /* Darker Blue on Hover */
         color: white !important;
     }
 
@@ -52,7 +52,7 @@ except:
     st.error("⚠️ API Key required in Secrets.")
     st.stop()
 
-# --- 4. LOAD DATA (Original Stable Desktop Method) ---
+# --- 4. LOAD DATA (Stable Desktop Connection) ---
 @st.cache_data(ttl=600)
 def load_knowledge_base():
     try:
@@ -123,7 +123,6 @@ if not st.session_state.answer_submitted:
         else:
             st.session_state.answer_submitted = True
             
-            # --- SPINNER RESTORED (Desktop Friendly) ---
             with st.spinner("Drill Sergeant is grading you..."):
                 try:
                     # --- RAGE & LORE ---
@@ -162,14 +161,15 @@ if not st.session_state.answer_submitted:
                         selected_lore = random.choice(lore_options)
                         persona_text = "Style: DETACHMENT LORE. Reference: " + selected_lore
 
-                    # --- GRADING PROMPT (Phonetic Mode Kept) ---
+                    # --- GRADING PROMPT ---
                     prompt = "You are a Drill Sergeant grading a Cadet.\n"
                     prompt += "1. GRADING RULES (PHONETIC MODE):\n"
                     prompt += "- CRITICAL: Ignore capitalization, punctuation, and spelling errors.\n"
                     prompt += "- IF IT SOUNDS RIGHT: If the user's input matches the phonetic sound of the correct answer (even with sloppy typing), you MUST start with 'PASS'.\n"
                     prompt += "- CATEGORY A (PASS): Input is perfect or just missing punctuation. ACTION: Say 'PASS'.\n"
                     prompt += "- CATEGORY B (PASS WITH CORRECTION): Input is correct but has typos/spelling errors. ACTION: Say 'PASS'. Then gently correct the spelling. DO NOT FAIL THEM FOR TYPOS.\n"
-                    prompt += "- CATEGORY C (FAIL): Significant words missing or completely wrong. ACTION: Do NOT use 'PASS'. Roast them.\n\n"
+                    prompt += "- CATEGORY C (PROFANITY): If input contains profanity, YOU MUST CALL IT OUT ('Do you kiss your mother with that mouth?!'). ESCALATE ANGER TO MAXIMUM. FAIL THEM.\n"
+                    prompt += "- CATEGORY D (FAIL): Significant words missing or completely wrong. ACTION: Do NOT use 'PASS'. Roast them.\n\n"
                     prompt += "2. STREAK CONTEXT:\n" + rage_text + "\n\n"
                     prompt += "3. PERSONALITY:\n" + persona_text + "\n\n"
                     prompt += "4. CONSTRAINT: Be a ONE-LINER. Short, punchy."
@@ -178,54 +178,4 @@ if not st.session_state.answer_submitted:
 
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
-                        temperature=1.3, 
-                        messages=[
-                            {"role": "system", "content": prompt},
-                            {"role": "user", "content": user_content_str}
-                        ],
-                        max_tokens=150
-                    )
-                    
-                    feedback_text = response.choices[0].message.content
-                    st.session_state.feedback = feedback_text
-                    
-                    if "PASS" in feedback_text:
-                        st.session_state.feedback_type = "success"
-                        if st.session_state.wrong_streak >= 4:
-                            st.session_state.show_balloons = True
-                        st.session_state.wrong_streak = 0
-                    else:
-                        st.session_state.feedback_type = "error"
-                        st.session_state.show_balloons = False
-                        st.session_state.wrong_streak += 1
-                
-                except Exception as e:
-                    st.error(f"System Error: {e}")
-                    st.session_state.answer_submitted = False
-            
-            st.rerun()
-
-else:
-    # --- RESULT SCREEN (Original Layout) ---
-    if st.session_state.feedback_type == "success":
-        st.success(st.session_state.feedback)
-        if st.session_state.show_balloons:
-            st.balloons()
-    else:
-        st.error(st.session_state.feedback)
-        # Blue Box for Answer
-        if "PASS" not in st.session_state.feedback:
-            st.info(f"**Correct Answer:**\n\n_{correct_answer}_")
-
-    # --- RESTORED NEXT BUTTON (Full Width) ---
-    if st.button("Next Question ->", type="primary", use_container_width=True):
-        new_question()
-        st.rerun()
-
-# --- FOOTER (Restored Text) ---
-st.divider()
-st.markdown("""
-<div style="text-align: center; color: gray; font-size: 0.8em;">
-    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force.
-</div>
-""", unsafe_allow_html=True)
+                        temperature=1.3,
