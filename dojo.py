@@ -204,4 +204,45 @@ if not st.session_state.answer_submitted:
                     st.session_state.feedback = feedback_text
                     
                     if "PASS" in feedback_text:
-                        st.session_state.
+                        st.session_state.feedback_type = "success"
+                        if st.session_state.wrong_streak >= 4:
+                            st.session_state.show_balloons = True
+                        else:
+                            st.session_state.show_balloons = False
+                        st.session_state.wrong_streak = 0
+                    else:
+                        st.session_state.feedback_type = "error"
+                        st.session_state.show_balloons = False
+                        st.session_state.wrong_streak += 1
+                
+                except Exception as e:
+                    st.error(f"Error: {e}")
+                    st.session_state.answer_submitted = False
+            
+            # This rerun is inside the submit_pressed block
+            st.rerun()
+
+# STATE B: RESULT MODE (User has submitted)
+else:
+    # Display Feedback
+    if st.session_state.feedback_type == "success":
+        st.success(st.session_state.feedback)
+        if st.session_state.show_balloons:
+            st.balloons()
+    else:
+        st.error(st.session_state.feedback)
+        if "PASS" not in st.session_state.feedback:
+            st.info(f"**Correct Answer:**\n{correct_answer}")
+
+    # Next Button
+    if st.button("Next Question ->", type="primary", use_container_width=True):
+        new_question()
+        st.rerun()
+
+# --- 8. FOOTER ---
+st.divider()
+st.markdown("""
+<div style="text-align: center; color: gray; font-size: 0.8em;">
+    NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
+</div>
+""", unsafe_allow_html=True)
