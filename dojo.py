@@ -152,7 +152,7 @@ if submit_pressed:
                         "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
                         "Tell them to focus before they rear-end someone in the Culver's drive-through.",
                         "Scream an obnoxious Area Greeting at them.",
-                        "Tell them they are moving slower than the Old Ginger."
+                        "Tell them they are slower than the old Ginger but not as wise."
                     ]
                     selected_lore = random.choice(lore_options)
                     persona_instruction = f"Style: DETACHMENT LORE. Specifically reference this event: {selected_lore}"
@@ -198,3 +198,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
