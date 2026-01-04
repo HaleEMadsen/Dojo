@@ -46,14 +46,11 @@ if not api_key:
 client = OpenAI(api_key=api_key)
 
 # --- 4. LOAD DATA FROM GOOGLE SHEETS ---
-# Cache allows us to check for updates every 60 seconds
 @st.cache_data(ttl=60)
 def load_knowledge_base():
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        # ttl=0 here ensures we get fresh data from Google, not the library's internal cache
         df = conn.read(ttl=0)
-        # Assumes Column 1 = Key (Topic), Column 2 = Value (Answer)
         data_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
         return data_dict
     except Exception as e:
@@ -83,13 +80,11 @@ st.title("🦅 Warrior Knowledge Dojo")
 st.markdown("**Det 925 Training Assistant**")
 st.divider()
 
-# Handle case where sheet might be empty or keys missing
 if not KNOWLEDGE_BASE:
     st.error("The Knowledge Base is empty! Add rows to your Google Sheet.")
     st.stop()
 
 target_quote_name = st.session_state.current_q
-# Ensure the key exists (in case sheet changed while user was active)
 if target_quote_name not in KNOWLEDGE_BASE:
     new_question()
     target_quote_name = st.session_state.current_q
@@ -118,31 +113,34 @@ if submit_pressed:
     else:
         with st.spinner("Evaluating..."):
             try:
+                # High temperature for maximum creativity/unpredictability
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
+                    temperature=1.2, 
                     messages=[
                         {"role": "system", "content": """
-                        You are a strict Air Force Drill Sergeant with a specific persona.
+                        You are a Drill Sergeant grading a Cadet on memory work.
                         
-                        1. CRITICAL: Analyze the Cadet's input.
-                        - If it matches or has only tiny typos: You MUST use the word "PASS" in the output.
-                        - If it is wrong/sloppy: Do NOT use the word "PASS".
+                        1. GRADING:
+                        - If input is Perfect or has tiny typos -> You MUST use the word "PASS" in your response.
+                        - If input is Sloppy/Wrong -> Do NOT use the word "PASS".
                         
-                        2. INTERNAL GRADING (Do NOT show the Tier Number to the user):
-                        - Perfect/Tiny Typo -> Pass
-                        - Sloppy/Wrong/Nonsense -> Fail (Roast them)
-
-                        3. PERSONALITY MIX:
-                        - 70% Standard Intense MTI (Yelling, strict).
-                        - 10% University of Wisconsin/Badger references (Bucky, Madison, Cheese Curds, frozen lakes).
-                        - 10% Air Force Puns (Aim High, planes, runways).
-                        - 10% Strange Gen Z slang (no cap, cringe, sus, L take).
+                        2. TONE (Roll the dice):
+                        Don't be a generic robot. Pick ONE specific vibe for this response and commit to it fully:
+                        - Vibe A: The Disappointed Dad (Cold, quiet judgment).
+                        - Vibe B: The Confused Gen Z (Using "bet", "no cap", or "cringe" incorrectly).
+                        - Vibe C: The Angry Wisconsin Local (Obsessed with cheese curds, frozen lakes, or Spotted Cow).
+                        - Vibe D: The Air Force Punmaster (Horrible aviation puns).
+                        - Vibe E: Pure Chaos (Abstract, weird, shocking insults).
                         
-                        Mix these elements naturally. Be witty but strict. Keep response under 3 sentences.
+                        3. CONSTRAINT:
+                        - Be unpredictable.
+                        - Be a ONE-LINER. Short, punchy, shocking.
+                        - Never explain the error. Just react to it.
                         """},
                         {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
                     ],
-                    max_tokens=150
+                    max_tokens=100
                 )
                 feedback_text = response.choices[0].message.content
                 st.session_state.feedback = feedback_text
