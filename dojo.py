@@ -168,7 +168,7 @@ if not st.session_state.answer_submitted:
                     
                     - **CATEGORY D: TOTAL FAILURE**
                       Input is wrong.
-                      ACTION: Do NOT use the word "PASS".
+                      ACTION: Do NOT use the word "Correct".
                       TONE: Follow the STREAK CONTEXT below.
                     
                     2. STREAK CONTEXT:
@@ -268,6 +268,7 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
