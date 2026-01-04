@@ -161,10 +161,10 @@ if not st.session_state.answer_submitted:
                     
                     - **CATEGORY B: NEAR MISS** Input is 80% correct but sloppy.
                       ACTION: Do NOT use the word "PASS". 
-                      TONE: Stern, corrective. "Tighten it up." DO NOT ROAST YET (Unless streak is high).
+                      TONE: Stern, corrective. DO NOT ROAST YET (Unless streak is high).
                     
                     - **CATEGORY C: PROFANITY / INSUBORDINATION**
-                      ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally.
+                      ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally. (e.g. lard head, smooth brain, clown, monkey, goblin)
                     
                     - **CATEGORY D: TOTAL FAILURE**
                       Input is wrong.
@@ -186,7 +186,7 @@ if not st.session_state.answer_submitted:
                     elif roll < 85: 
                         persona_instruction = """
                         Style: GEN Z BRAINROT. You MUST use modern slang.
-                        Pick ONE OR TWO: skibidi, sigma, rizz, fanum tax, ohio, cap, no cap, bet, lowkey, highkey, L + ratio, goated, opps, crashout, delulu, let him cook.
+                        Pick ONE OR TWO, randomly: skibidi, sigma, rizz, fanum tax, ohio, cap, no cap, bet, lowkey, highkey, L + ratio, goated, opps, crashout, let him cook.
                         Mix this with military discipline. It should sound unnatural.
                         """
                     elif roll < 90:
@@ -200,7 +200,7 @@ if not st.session_state.answer_submitted:
                             "Tell them to fix it before they end up in the hospital at Special Warfare PT.",
                             "Tell them to focus before they rear-end someone in the Culver's drive-through.",
                             "Scream an obnoxious Area Greeting at them.",
-                            "Tell them they are moving slower than the Old Ginger."
+                            "Tell them they are  slower than the Old Ginger but not as wise."
                         ]
                         selected_lore = random.choice(lore_options)
                         persona_instruction = f"Style: DETACHMENT LORE. Reference: {selected_lore}"
@@ -264,3 +264,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
