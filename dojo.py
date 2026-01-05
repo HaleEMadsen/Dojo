@@ -102,12 +102,17 @@ if 'feedback_type' not in st.session_state:
 if 'show_balloons' not in st.session_state:
     st.session_state.show_balloons = False
 
+# --- AUDIO STATE INIT ---
+if 'last_audio' not in st.session_state:
+    st.session_state.last_audio = None
+
 def new_question():
     st.session_state.current_q = random.choice(list(KNOWLEDGE_BASE.keys()))
     st.session_state.feedback = ""
     st.session_state.feedback_type = ""
     st.session_state.answer_submitted = False 
     st.session_state.show_balloons = False
+    st.session_state.last_audio = None  # Reset audio
 
 # --- 6. THE UI HEADER ---
 st.title("🦅 Warrior Knowledge Dojo")
@@ -179,7 +184,6 @@ if not st.session_state.answer_submitted:
                     roll = random.uniform(0, 100)
                     
                     # --- SAFE PROMPT CONSTRUCTION ---
-                    # We use .format() here to avoid f-string syntax errors in deep indentation
                     base_template = """
                     You are a Drill Sergeant grading a Cadet.
                     
@@ -253,6 +257,17 @@ if not st.session_state.answer_submitted:
                     
                     feedback_text = response.choices[0].message.content
                     st.session_state.feedback = feedback_text
+
+                    # --- GENERATE AUDIO (ONYX VOICE) ---
+                    try:
+                        audio_response = client.audio.speech.create(
+                            model="tts-1",
+                            voice="onyx",
+                            input=feedback_text
+                        )
+                        st.session_state.last_audio = audio_response.content
+                    except Exception as audio_e:
+                        st.warning(f"Audio generation failed: {audio_e}")
                     
                     if "Correct" in feedback_text:
                         st.session_state.feedback_type = "success"
@@ -285,6 +300,10 @@ else:
         if "Correct" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
 
+    # --- AUTO-PLAY AUDIO ---
+    if st.session_state.last_audio:
+        st.audio(st.session_state.last_audio, format="audio/mp3", autoplay=True)
+
     # Next Button
     if st.button("Next Question ->", type="primary", use_container_width=True):
         new_question()
@@ -297,16 +316,3 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
