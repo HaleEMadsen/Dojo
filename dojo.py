@@ -4,7 +4,7 @@ from streamlit_gsheets import GSheetsConnection
 import random
 import time
 import pandas as pd
-import base64  # NEW: Needed for the invisible audio player
+import base64  # Needed for the invisible audio player
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -175,6 +175,7 @@ if not st.session_state.answer_submitted:
                     roll = random.uniform(0, 100)
                     
                     # --- SAFE PROMPT CONSTRUCTION ---
+                    # UPDATED CONSTRAINT: Added instruction for CAPS to force aggressive audio
                     base_template = """
                     You are a Drill Sergeant grading a Cadet.
                     
@@ -199,7 +200,7 @@ if not st.session_state.answer_submitted:
                     {rage}
                     
                     3. CONSTRAINT:
-                    Responses may include up to 2 sentences. The first sentence must succinctly explain how the cadet should have found the correct answer and why their answer is wrong. Especially on images, give a tip for how to identify the correct answer instead of theirs. The second sentence is a short, punchy, and aggressive one-liner or roast.
+                    Responses may include up to 2 sentences. The first sentence must succinctly explain how the cadet should have found the correct answer and why their answer is wrong. The second sentence must be in **ALL CAPS**. Use multiple exclamation marks (e.g. 'MOVE IT!!!'). Use short, staccato sentences to force the voice engine to be aggressive.
                     """
                     
                     base_instruction = base_template.format(rage=rage_instruction)
@@ -281,27 +282,59 @@ if not st.session_state.answer_submitted:
 
 # STATE B: RESULT MODE (User has submitted)
 else:
-    # Display Feedback
-    if st.session_state.feedback_type == "success":
-        st.success(st.session_state.feedback)
-        if st.session_state.show_balloons:
-            st.balloons()
-    else:
+    # --- 1. VISUAL FLASHBANG (If Error) ---
+    if st.session_state.feedback_type == "error":
+        # This CSS animation flashes the screen red briefly
+        st.markdown("""
+            <style>
+            @keyframes flash {
+                0% { background-color: #ff0000; }
+                50% { background-color: #8b0000; }
+                100% { background-color: #0e1117; }
+            }
+            .stApp {
+                animation: flash 0.4s ease-in-out;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Display Error Box
         st.error(st.session_state.feedback)
         if "Correct" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
+            
+    # --- 2. SUCCESS STATE ---
+    elif st.session_state.feedback_type == "success":
+        st.success(st.session_state.feedback)
+        if st.session_state.show_balloons:
+            st.balloons()
 
-    # --- INVISIBLE AUTO-PLAY AUDIO ---
-    # We transform the audio bytes into base64 text and inject HTML to play it hidden
+    # --- 3. AUDIO ASSAULT (Invisible & layered) ---
     if st.session_state.last_audio:
         try:
-            b64_audio = base64.b64encode(st.session_state.last_audio).decode()
+            # A. The MTI Voice (Encoded)
+            b64_voice = base64.b64encode(st.session_state.last_audio).decode()
+            
+            # B. The Stress Background (Only plays on error)
+            # This is a short, discordant "Wrong Answer" buzzer/siren.
+            siren_html = ""
+            if st.session_state.feedback_type == "error":
+                siren_url = "https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c7443c.mp3" 
+                siren_html = f"""
+                    <audio autoplay="true" volume="0.2">
+                    <source src="{siren_url}" type="audio/mp3">
+                    </audio>
+                """
+
+            # C. Combine them into one invisible HTML block
             md = f"""
+                {siren_html}
                 <audio autoplay="true" style="display:none;">
-                <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+                <source src="data:audio/mp3;base64,{b64_voice}" type="audio/mp3">
                 </audio>
                 """
             st.markdown(md, unsafe_allow_html=True)
+            
         except Exception as e:
             st.warning("Audio playback error.")
 
