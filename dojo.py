@@ -3,7 +3,8 @@ from openai import OpenAI
 from streamlit_gsheets import GSheetsConnection
 import random
 import time
-import pandas as pd # Added pandas for easier column handling
+import pandas as pd
+import base64  # NEW: Needed for the invisible audio player
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -47,25 +48,21 @@ if not api_key:
 
 client = OpenAI(api_key=api_key)
 
-# --- 4. LOAD DATA FROM GOOGLE SHEETS (UPDATED FOR IMAGES) ---
+# --- 4. LOAD DATA FROM GOOGLE SHEETS ---
 @st.cache_data(ttl=60)
 def load_knowledge_base():
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
         df = conn.read(ttl=0)
         
-        # 1. Create the standard Question -> Answer dictionary
-        # We assume Col 0 is Question, Col 1 is Answer
+        # 1. Create Question -> Answer dict
         data_dict = dict(zip(df.iloc[:, 0], df.iloc[:, 1]))
         
-        # 2. Create the Question -> Image URL dictionary
-        # We look for a column specifically named "Image_URL"
+        # 2. Create Question -> Image URL dict
         if "Image_URL" in df.columns:
-            # Fill NaN values with empty strings to prevent errors
             df["Image_URL"] = df["Image_URL"].fillna("")
             image_dict = dict(zip(df.iloc[:, 0], df["Image_URL"]))
         else:
-            # If the column doesn't exist yet, return an empty dict
             image_dict = {}
             
         return data_dict, image_dict
@@ -73,7 +70,6 @@ def load_knowledge_base():
     except Exception as e:
         return None, None
 
-# Unpack the two dictionaries
 kb_data, img_data = load_knowledge_base()
 
 if not kb_data:
@@ -129,10 +125,8 @@ correct_answer = KNOWLEDGE_BASE[target_quote_name]
 # --- DISPLAY QUESTION & OPTIONAL IMAGE ---
 st.subheader(target_quote_name)
 
-# NEW LOGIC: Check if this question has an associated image
 if target_quote_name in IMAGE_BASE:
     image_url = IMAGE_BASE[target_quote_name]
-    # Check if the URL is valid (not empty and starts with http)
     if image_url and str(image_url).strip() != "" and str(image_url).startswith("http"):
         try:
             st.image(image_url, caption="Visual Identification Required", use_container_width=True)
@@ -171,13 +165,10 @@ if not st.session_state.answer_submitted:
                     if current_streak == 0:
                         rage_instruction = "CONTEXT: First attempt. Be professional."
                     elif current_streak < 3:
-                        # 1 or 2 wrong
                         rage_instruction = f"CONTEXT: They have failed {current_streak} times. Get ANNOYED/STERN."
                     elif current_streak < 5:
-                        # 3 or 4 wrong
                         rage_instruction = f"CONTEXT: They have failed {current_streak} times. BE VERY MAD. YELL (Caps)."
                     else:
-                        # 5+ wrong
                         rage_instruction = f"CONTEXT: They have failed {current_streak} times. GO COMPLETELY ENRAGED/VICIOUS. LOSE YOUR MIND."
                     
                     # --- PROBABILITY ENGINE ---
@@ -258,12 +249,13 @@ if not st.session_state.answer_submitted:
                     feedback_text = response.choices[0].message.content
                     st.session_state.feedback = feedback_text
 
-                    # --- GENERATE AUDIO (ONYX VOICE) ---
+                    # --- GENERATE AUDIO (ONYX VOICE + FAST SPEED) ---
                     try:
                         audio_response = client.audio.speech.create(
                             model="tts-1",
                             voice="onyx",
-                            input=feedback_text
+                            input=feedback_text,
+                            speed=1.25  # Increased speed for "Frantic/Stress" effect
                         )
                         st.session_state.last_audio = audio_response.content
                     except Exception as audio_e:
@@ -285,7 +277,6 @@ if not st.session_state.answer_submitted:
                     st.error(f"Error: {e}")
                     st.session_state.answer_submitted = False
             
-            # This rerun is inside the else block (user provided input)
             st.rerun()
 
 # STATE B: RESULT MODE (User has submitted)
@@ -300,9 +291,19 @@ else:
         if "Correct" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
 
-    # --- AUTO-PLAY AUDIO ---
+    # --- INVISIBLE AUTO-PLAY AUDIO ---
+    # We transform the audio bytes into base64 text and inject HTML to play it hidden
     if st.session_state.last_audio:
-        st.audio(st.session_state.last_audio, format="audio/mp3", autoplay=True)
+        try:
+            b64_audio = base64.b64encode(st.session_state.last_audio).decode()
+            md = f"""
+                <audio autoplay="true" style="display:none;">
+                <source src="data:audio/mp3;base64,{b64_audio}" type="audio/mp3">
+                </audio>
+                """
+            st.markdown(md, unsafe_allow_html=True)
+        except Exception as e:
+            st.warning("Audio playback error.")
 
     # Next Button
     if st.button("Next Question ->", type="primary", use_container_width=True):
