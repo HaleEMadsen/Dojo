@@ -315,42 +315,49 @@ else:
             # A. The MTI Voice (Encoded)
             b64_voice = base64.b64encode(st.session_state.last_audio).decode()
             
-            # B. The Stress Background (Only plays on ERROR, not on Sloppy Pass)
+            # B. The Stress Background
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # UPDATED: Wikimedia Commons links (Reliable, no hotlink blocking)
                 stress_sounds = [
-                    # Klaxon / Submarine Dive
                     "https://upload.wikimedia.org/wikipedia/commons/5/5e/Klaxon_1.ogg", 
-                    # Air Raid Siren
                     "https://upload.wikimedia.org/wikipedia/commons/3/3d/Air_raid_siren.ogg",
-                    # Annoying Beep
                     "https://upload.wikimedia.org/wikipedia/commons/f/f3/Beep_short.ogg" 
                 ]
                 selected_siren = random.choice(stress_sounds)
                 
-                # We add 'autoplay' and 'loop' and max volume
+                # HTML5 Audio with ID for JS targeting
                 siren_html = f"""
-                    <audio autoplay loop volume="1.0">
+                    <audio id="siren_player" autoplay loop volume="1.0">
                         <source src="{selected_siren}" type="audio/ogg">
                         <source src="{selected_siren}" type="audio/mp3">
                     </audio>
                 """
 
-            # C. Combine them (Hidden Player)
-            # Note: We put the voice second so it overlays the siren
+            # C. Combine them using a 0-pixel height container (NOT display:none)
+            # We also add a small script to FORCE play, bypassing some browser restrictions
             md = f"""
-                <div style="display:none">
+                <div style="height:0px; overflow:hidden; opacity:0; width:0px;">
                     {siren_html}
-                    <audio autoplay>
+                    <audio id="voice_player" autoplay>
                         <source src="data:audio/mp3;base64,{b64_voice}" type="audio/mp3">
                     </audio>
                 </div>
+                
+                <script>
+                    var v = document.getElementById("voice_player");
+                    var s = document.getElementById("siren_player");
+                    if (v) {{ v.play(); }}
+                    if (s) {{ s.play(); }}
+                </script>
                 """
             st.markdown(md, unsafe_allow_html=True)
+
+            # Fallback: Visible player if autoplay fails
+            st.caption("Audio didn't play? Check browser permissions or use the player below:")
+            st.audio(st.session_state.last_audio, format="audio/mp3")
             
         except Exception as e:
-            st.warning("Audio playback error.")
+            st.warning(f"Audio playback error: {e}")
 
     # Next Button
     if st.button("Next Question ->", type="primary", use_container_width=True):
@@ -364,4 +371,5 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
