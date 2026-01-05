@@ -174,20 +174,25 @@ if not st.session_state.answer_submitted:
                     # --- PROBABILITY ENGINE ---
                     roll = random.uniform(0, 100)
                     
-                    # --- SAFE PROMPT CONSTRUCTION ---
-                    # We tell the AI to always use "Correct" if the answer is phonetically/technically right.
+                    # --- STRICT PROMPT CONSTRUCTION ---
+                    # I have tightened this logic to ensure it doesn't pass everything.
                     base_template = """
                     You are a Drill Sergeant grading a Cadet.
                     
-                    1. EVALUATE THE INPUT:
+                    COMPARE the "Correct Quote" to the "Cadet Input".
                     
-                    - **CATEGORY A: Correct / Sloppy Pass** If the answer is technically right (even with typos, missing caps, or bad grammar), you MUST start your response with the word "Correct".
-                      TONE: If sloppy, be correcting but valid.
+                    1. GRADING RUBRIC:
                     
-                    - **CATEGORY B: TOTAL FAILURE**
-                      Input is factually wrong.
-                      ACTION: Do NOT use the word "Correct".
-                      TONE: Follow the STREAK CONTEXT below.
+                    - **PASS (CORRECT)**: 
+                      The input matches the quote phonetically. 
+                      Ignore punctuation, capitalization, and minor spelling errors. 
+                      If they used an abbreviation but the context is clear, it is a PASS.
+                      ACTION: Start your response with "Correct".
+                    
+                    - **FAIL (WRONG)**: 
+                      If the input misses key words, gets the order wrong, or is just a different sentence.
+                      If the input is lazy or incomplete.
+                      ACTION: Do NOT use the word "Correct". Roast them.
                     
                     2. STREAK CONTEXT:
                     {rage}
@@ -232,7 +237,7 @@ if not st.session_state.answer_submitted:
                     
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
-                        temperature=1.3, 
+                        temperature=0.7, # Lowered temperature slightly for more consistent grading
                         messages=[
                             {"role": "system", "content": final_prompt},
                             {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
@@ -255,7 +260,8 @@ if not st.session_state.answer_submitted:
                     except Exception as audio_e:
                         st.warning(f"Audio generation failed: {audio_e}")
                     
-                    if "Correct" in feedback_text:
+                    # Logic: Only success if the AI explicitly says "Correct"
+                    if feedback_text.strip().startswith("Correct") or "Correct." in feedback_text[:10]:
                         st.session_state.feedback_type = "success"
                         if st.session_state.wrong_streak >= 4:
                             st.session_state.show_balloons = True
@@ -309,7 +315,7 @@ else:
             # B. The Stress Background (CIVIL DEFENSE SIREN)
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # This is a loud Air Raid / Civil Defense Siren MP3
+                # High-stress Air Raid Siren
                 siren_url = "https://cdn.pixabay.com/audio/2021/08/09/audio_03d6e32561.mp3"
                 
                 siren_html = f"""
