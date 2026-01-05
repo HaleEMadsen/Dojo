@@ -317,40 +317,51 @@ else:
             # B. The Stress Background
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # UPDATED: Wikimedia Commons links (Reliable, high stress)
+                # UPDATED: Reliable MP3 links only (No OGG)
                 stress_sounds = [
-                    "https://upload.wikimedia.org/wikipedia/commons/5/5e/Klaxon_1.ogg", # Klaxon
-                    "https://upload.wikimedia.org/wikipedia/commons/3/3d/Air_raid_siren.ogg", # Air Raid
-                    "https://upload.wikimedia.org/wikipedia/commons/f/f3/Beep_short.ogg" # High Pitch Beep
+                    "https://www.soundjay.com/mechanical/sounds/smoke-detector-1.mp3", # Smoke Detector
+                    "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3", # Fire Bell
+                    "https://www.soundjay.com/buttons/sounds/beep-10.mp3" # Annoying Beep
                 ]
                 selected_siren = random.choice(stress_sounds)
                 
-                # HTML5 Audio with ID for JS targeting
+                # HTML5 Audio with ID. Note the 'volume' attribute doesn't work in raw HTML, 
+                # we must use JS to set volume.
                 siren_html = f"""
-                    <audio id="siren_player" autoplay loop volume="1.0">
-                        <source src="{selected_siren}" type="audio/ogg">
+                    <audio id="siren_player" loop>
                         <source src="{selected_siren}" type="audio/mp3">
                     </audio>
                 """
 
-            # C. Combine them using a 0-pixel height container (NOT display:none)
-            # We also add a small script to FORCE play, bypassing some browser restrictions
+            # C. Combine them
+            # KEY FIX: We use width:1px height:1px instead of hidden/0px. 
+            # This tricks the browser into thinking the player is "visible".
             md = f"""
-                <div style="height:0px; overflow:hidden; opacity:0; width:0px;">
+                <div style="width:1px; height:1px; opacity:0.01; overflow:hidden;">
                     {siren_html}
-                    <audio id="voice_player" autoplay>
+                    <audio id="voice_player">
                         <source src="data:audio/mp3;base64,{b64_voice}" type="audio/mp3">
                     </audio>
                 </div>
                 
                 <script>
+                    // The JavaScript Enforcer
+                    // 1. Get the elements
                     var v = document.getElementById("voice_player");
                     var s = document.getElementById("siren_player");
-                    if (v) {{ v.play(); }}
-                    if (s) {{ s.play(); }}
+                    
+                    // 2. Set volumes (Voice louder, siren background)
+                    if (v) {{ v.volume = 1.0; v.play(); }}
+                    if (s) {{ s.volume = 0.4; s.play(); }}
                 </script>
                 """
             st.markdown(md, unsafe_allow_html=True)
+            
+            # D. FALLBACK PLAYER
+            # If the hack above fails, this standard player will appear so you can manually play it.
+            # It also helps 'prime' the browser to allow audio.
+            with st.expander("Audio not playing? Click here", expanded=False):
+                st.audio(st.session_state.last_audio, format="audio/mp3")
             
         except Exception as e:
             st.warning(f"Audio playback error: {e}")
@@ -367,3 +378,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
