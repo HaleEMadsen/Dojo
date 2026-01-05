@@ -318,27 +318,34 @@ else:
             # B. The Stress Background (Only plays on ERROR, not on Sloppy Pass)
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # UPDATED: Only 3 truly annoying/stressful sounds
+                # UPDATED: Wikimedia Commons links (Reliable, no hotlink blocking)
                 stress_sounds = [
-                    "https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3", # Submarine Dive Alarm (Repetitive)
-                    "https://cdn.pixabay.com/audio/2022/03/15/audio_2b29c5e064.mp3", # Emergency Alert Tone (High pitch)
-                    "https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3"  # Police Siren (Disorienting)
+                    # Klaxon / Submarine Dive
+                    "https://upload.wikimedia.org/wikipedia/commons/5/5e/Klaxon_1.ogg", 
+                    # Air Raid Siren
+                    "https://upload.wikimedia.org/wikipedia/commons/3/3d/Air_raid_siren.ogg",
+                    # Annoying Beep
+                    "https://upload.wikimedia.org/wikipedia/commons/f/f3/Beep_short.ogg" 
                 ]
                 selected_siren = random.choice(stress_sounds)
                 
-                # Loop set to true for persistent stress
+                # We add 'autoplay' and 'loop' and max volume
                 siren_html = f"""
-                    <audio autoplay="true" loop="true" volume="0.25">
-                    <source src="{selected_siren}" type="audio/mp3">
+                    <audio autoplay loop volume="1.0">
+                        <source src="{selected_siren}" type="audio/ogg">
+                        <source src="{selected_siren}" type="audio/mp3">
                     </audio>
                 """
 
-            # C. Combine them
+            # C. Combine them (Hidden Player)
+            # Note: We put the voice second so it overlays the siren
             md = f"""
-                {siren_html}
-                <audio autoplay="true" style="display:none;">
-                <source src="data:audio/mp3;base64,{b64_voice}" type="audio/mp3">
-                </audio>
+                <div style="display:none">
+                    {siren_html}
+                    <audio autoplay>
+                        <source src="data:audio/mp3;base64,{b64_voice}" type="audio/mp3">
+                    </audio>
+                </div>
                 """
             st.markdown(md, unsafe_allow_html=True)
             
@@ -357,3 +364,4 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
