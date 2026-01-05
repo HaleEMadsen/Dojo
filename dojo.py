@@ -175,24 +175,24 @@ if not st.session_state.answer_submitted:
                     roll = random.uniform(0, 100)
                     
                     # --- SAFE PROMPT CONSTRUCTION ---
-                    # Note: We enforce CAPS in the second sentence to trigger louder TTS
                     base_template = """
                     You are a Drill Sergeant grading a Cadet.
                     
                     1. EVALUATE THE INPUT:
                     
-                    - **CATEGORY A: Correct** would be phonetically correct if read aloud. Ignore capitalization/spelling/punctuation/small/typos if the answer would be phonetically accurate. Also, don't count abbreviations as wrong, but let them know that they should say the whole answer.
-                      ACTION: You MUST use the word "Correct." Also consider adding the word "Outstanding." Be brief/neutral.
+                    - **CATEGORY A: Correct** would be phonetically correct if read aloud.
+                      ACTION: You MUST start with the word "Correct." Be brief/neutral.
                     
-                    - **CATEGORY B: Sloppy Pass** Input is 80% correct but sloppy.
-                      ACTION: Use the word "Correct"
-                      TONE: Forgiving, corrective. DO NOT ROAST YET (Unless streak is high).
+                    - **CATEGORY B: SLOPPY PASS (Grammar/Typos/Minor Phrasing)**
+                      If the answer is technically right but has bad grammar, missing capitalization, or is slightly misphrased but clearly understands the concept.
+                      ACTION: You MUST start with the word "Correct".
+                      TONE: Forgiving but corrective. Do NOT use the fail-state.
                     
                     - **CATEGORY C: PROFANITY / INSUBORDINATION**
                       ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally. Call them an absurd insult.
                     
                     - **CATEGORY D: TOTAL FAILURE**
-                      Input is wrong.
+                      Input is factually wrong.
                       ACTION: Do NOT use the word "Correct".
                       TONE: Follow the STREAK CONTEXT below.
                     
@@ -256,12 +256,14 @@ if not st.session_state.answer_submitted:
                             model="tts-1",
                             voice="onyx",
                             input=feedback_text,
-                            speed=1.25  # Fast speed = stress
+                            speed=1.25
                         )
                         st.session_state.last_audio = audio_response.content
                     except Exception as audio_e:
                         st.warning(f"Audio generation failed: {audio_e}")
                     
+                    # Logic: If the AI was forced to say "Correct" (even for sloppy answers), 
+                    # we treat it as success and do NOT flash/siren.
                     if "Correct" in feedback_text:
                         st.session_state.feedback_type = "success"
                         if st.session_state.wrong_streak >= 4:
@@ -282,7 +284,7 @@ if not st.session_state.answer_submitted:
 
 # STATE B: RESULT MODE (User has submitted)
 else:
-    # --- 1. VISUAL FLASHBANG (If Error) ---
+    # --- 1. VISUAL FLASHBANG (Only on Total Failure) ---
     if st.session_state.feedback_type == "error":
         st.markdown("""
             <style>
@@ -301,7 +303,7 @@ else:
         if "Correct" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
             
-    # --- 2. SUCCESS STATE ---
+    # --- 2. SUCCESS STATE (Includes Sloppy Pass) ---
     elif st.session_state.feedback_type == "success":
         st.success(st.session_state.feedback)
         if st.session_state.show_balloons:
@@ -313,26 +315,25 @@ else:
             # A. The MTI Voice (Encoded)
             b64_voice = base64.b64encode(st.session_state.last_audio).decode()
             
-            # B. The Stress Background (Only plays on error)
+            # B. The Stress Background (Only plays on ERROR, not on Sloppy Pass)
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # List of looping stress sounds
+                # UPDATED: Only 3 truly annoying/stressful sounds
                 stress_sounds = [
-                    "https://cdn.pixabay.com/audio/2022/03/15/audio_2b29c5e064.mp3", # Emergency Alarm
-                    "https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3", # Police/Raid Siren
-                    "https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3", # Sci-Fi Alert
-                    "https://cdn.pixabay.com/audio/2024/09/13/audio_494c8e7456.mp3"  # Deep War Alarm
+                    "https://cdn.pixabay.com/audio/2021/08/04/audio_0625c1539c.mp3", # Submarine Dive Alarm (Repetitive)
+                    "https://cdn.pixabay.com/audio/2022/03/15/audio_2b29c5e064.mp3", # Emergency Alert Tone (High pitch)
+                    "https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3"  # Police Siren (Disorienting)
                 ]
                 selected_siren = random.choice(stress_sounds)
                 
-                # Note: loop="true" keeps it playing as long as this screen is open
+                # Loop set to true for persistent stress
                 siren_html = f"""
-                    <audio autoplay="true" loop="true" volume="0.3">
+                    <audio autoplay="true" loop="true" volume="0.25">
                     <source src="{selected_siren}" type="audio/mp3">
                     </audio>
                 """
 
-            # C. Combine them (Voice + Looping Background)
+            # C. Combine them
             md = f"""
                 {siren_html}
                 <audio autoplay="true" style="display:none;">
