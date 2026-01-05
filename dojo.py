@@ -175,22 +175,16 @@ if not st.session_state.answer_submitted:
                     roll = random.uniform(0, 100)
                     
                     # --- SAFE PROMPT CONSTRUCTION ---
+                    # We tell the AI to always use "Correct" if the answer is phonetically/technically right.
                     base_template = """
                     You are a Drill Sergeant grading a Cadet.
                     
                     1. EVALUATE THE INPUT:
                     
-                    - **CATEGORY A: Perfect/Good** ACTION: You MUST start with the word "Correct." Be brief/neutral.
+                    - **CATEGORY A: Correct / Sloppy Pass** If the answer is technically right (even with typos, missing caps, or bad grammar), you MUST start your response with the word "Correct".
+                      TONE: If sloppy, be correcting but valid.
                     
-                    - **CATEGORY B: SLOPPY PASS (Grammar/Typos/Minor Phrasing)**
-                      If the answer is technically right but has bad grammar, missing capitalization, or is slightly misphrased but clearly understands the concept.
-                      ACTION: You MUST start with the word "Correct".
-                      TONE: Forgiving but corrective. Do NOT use the fail-state. Warn them to fix the grammar, but count it as a pass.
-                    
-                    - **CATEGORY C: PROFANITY / INSUBORDINATION**
-                      ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally. Call them an absurd insult.
-                    
-                    - **CATEGORY D: TOTAL FAILURE**
+                    - **CATEGORY B: TOTAL FAILURE**
                       Input is factually wrong.
                       ACTION: Do NOT use the word "Correct".
                       TONE: Follow the STREAK CONTEXT below.
@@ -206,7 +200,7 @@ if not st.session_state.answer_submitted:
                     
                     # Personality Logic
                     if roll < 75: 
-                        persona_instruction = "Style: Standard MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese. (IMPORTANT: But still respect the phonetic rule. Answers are correct if they sound right when read aloud. Do not nitpick or call it a near miss if the errors are just capitalization or grammar."
+                        persona_instruction = "Style: Standard MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese."
                     elif roll < 85: 
                         persona_instruction = """
                         Style: GEN Z BRAINROT. You MUST use modern slang.
@@ -306,27 +300,25 @@ else:
         if st.session_state.show_balloons:
             st.balloons()
 
-    # --- 3. AUDIO ASSAULT (Original "Working" Method) ---
+    # --- 3. AUDIO ASSAULT (Original Autoplay Method) ---
     if st.session_state.last_audio:
         try:
             # A. The MTI Voice
             b64_voice = base64.b64encode(st.session_state.last_audio).decode()
             
-            # B. The Stress Background (Klaxon/Siren)
+            # B. The Stress Background (CIVIL DEFENSE SIREN)
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # High-stress Nuclear Alarm / Air Raid style
-                siren_url = "https://cdn.pixabay.com/audio/2022/03/10/audio_5b36489439.mp3" 
+                # This is a loud Air Raid / Civil Defense Siren MP3
+                siren_url = "https://cdn.pixabay.com/audio/2021/08/09/audio_03d6e32561.mp3"
                 
-                # We use a simple HTML audio tag. This is what worked before.
                 siren_html = f"""
-                    <audio autoplay="true" loop volume="1.0">
+                    <audio autoplay="true" loop>
                     <source src="{siren_url}" type="audio/mp3">
                     </audio>
                 """
 
             # C. Combine them into one invisible HTML block
-            # No Scripts. No hidden divs. Just the raw autoplay tags that worked originally.
             md = f"""
                 {siren_html}
                 <audio autoplay="true" style="display:none;">
