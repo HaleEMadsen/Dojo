@@ -174,25 +174,26 @@ if not st.session_state.answer_submitted:
                     # --- PROBABILITY ENGINE ---
                     roll = random.uniform(0, 100)
                     
-                    # --- STRICT PROMPT CONSTRUCTION ---
-                    # I have tightened this logic to ensure it doesn't pass everything.
+                    # --- SAFE PROMPT CONSTRUCTION ---
                     base_template = """
                     You are a Drill Sergeant grading a Cadet.
                     
-                    COMPARE the "Correct Quote" to the "Cadet Input".
+                    1. EVALUATE THE INPUT:
                     
-                    1. GRADING RUBRIC:
+                    - **CATEGORY A: Perfect/Good** ACTION: You MUST start with the word "Correct." Be brief/neutral.
                     
-                    - **PASS (CORRECT)**: 
-                      The input matches the quote phonetically. 
-                      Ignore punctuation, capitalization, and minor spelling errors. 
-                      If they used an abbreviation but the context is clear, it is a PASS.
-                      ACTION: Start your response with "Correct".
+                    - **CATEGORY B: SLOPPY PASS (Grammar/Typos/Minor Phrasing)**
+                      If the answer is technically right but has bad grammar, missing capitalization, or is slightly misphrased but clearly understands the concept.
+                      ACTION: You MUST start with the word "Correct".
+                      TONE: Forgiving but corrective. Do NOT use the fail-state. Warn them to fix the grammar, but count it as a pass.
                     
-                    - **FAIL (WRONG)**: 
-                      If the input misses key words, gets the order wrong, or is just a different sentence.
-                      If the input is lazy or incomplete.
-                      ACTION: Do NOT use the word "Correct". Roast them.
+                    - **CATEGORY C: PROFANITY / INSUBORDINATION**
+                      ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally. Call them an absurd insult.
+                    
+                    - **CATEGORY D: TOTAL FAILURE**
+                      Input is factually wrong.
+                      ACTION: Do NOT use the word "Correct".
+                      TONE: Follow the STREAK CONTEXT below.
                     
                     2. STREAK CONTEXT:
                     {rage}
@@ -205,7 +206,7 @@ if not st.session_state.answer_submitted:
                     
                     # Personality Logic
                     if roll < 75: 
-                        persona_instruction = "Style: Standard MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese."
+                        persona_instruction = "Style: Standard MTI, Disappointed Dad, or Bad Pun. Do NOT use slang. Do NOT mention cheese. (IMPORTANT: But still respect the phonetic rule. Answers are correct if they sound right when read aloud. Do not nitpick or call it a near miss if the errors are just capitalization or grammar."
                     elif roll < 85: 
                         persona_instruction = """
                         Style: GEN Z BRAINROT. You MUST use modern slang.
@@ -237,7 +238,7 @@ if not st.session_state.answer_submitted:
                     
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
-                        temperature=0.7, # Lowered temperature slightly for more consistent grading
+                        temperature=1.3, 
                         messages=[
                             {"role": "system", "content": final_prompt},
                             {"role": "user", "content": f"Correct Quote: {correct_answer}\n\nCadet Input: {user_attempt}"}
@@ -260,8 +261,7 @@ if not st.session_state.answer_submitted:
                     except Exception as audio_e:
                         st.warning(f"Audio generation failed: {audio_e}")
                     
-                    # Logic: Only success if the AI explicitly says "Correct"
-                    if feedback_text.strip().startswith("Correct") or "Correct." in feedback_text[:10]:
+                    if "Correct" in feedback_text:
                         st.session_state.feedback_type = "success"
                         if st.session_state.wrong_streak >= 4:
                             st.session_state.show_balloons = True
@@ -306,25 +306,27 @@ else:
         if st.session_state.show_balloons:
             st.balloons()
 
-    # --- 3. AUDIO ASSAULT (Original Autoplay Method) ---
+    # --- 3. AUDIO ASSAULT (Original "Working" Method) ---
     if st.session_state.last_audio:
         try:
             # A. The MTI Voice
             b64_voice = base64.b64encode(st.session_state.last_audio).decode()
             
-            # B. The Stress Background (CIVIL DEFENSE SIREN)
+            # B. The Stress Background (Klaxon/Siren)
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # High-stress Air Raid Siren
-                siren_url = "https://cdn.pixabay.com/audio/2021/08/09/audio_03d6e32561.mp3"
+                # High-stress Nuclear Alarm / Air Raid style
+                siren_url = "https://cdn.pixabay.com/audio/2022/03/10/audio_5b36489439.mp3" 
                 
+                # We use a simple HTML audio tag. This is what worked before.
                 siren_html = f"""
-                    <audio autoplay="true" loop>
+                    <audio autoplay="true" loop volume="1.0">
                     <source src="{siren_url}" type="audio/mp3">
                     </audio>
                 """
 
             # C. Combine them into one invisible HTML block
+            # No Scripts. No hidden divs. Just the raw autoplay tags that worked originally.
             md = f"""
                 {siren_html}
                 <audio autoplay="true" style="display:none;">
