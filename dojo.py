@@ -204,7 +204,7 @@ if not st.session_state.answer_submitted:
                     {rage}
                     
                     3. CONSTRAINT:
-                    Responses may include up to 2 sentences. The first sentence must succinctly explain why the answer is wrong. The second sentence is a short, punchy one-liner or roast.
+                    Responses may include up to 2 sentences. The first sentence must succinctly explain how the cadet should have found the correct answer and why their answer is wrong. The second sentence is a short, punchy, and aggressive one-liner or roast.
                     """
                     
                     base_instruction = base_template.format(rage=rage_instruction)
@@ -297,6 +297,7 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
