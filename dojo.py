@@ -175,7 +175,7 @@ if not st.session_state.answer_submitted:
                     roll = random.uniform(0, 100)
                     
                     # --- SAFE PROMPT CONSTRUCTION ---
-                    # UPDATED CONSTRAINT: Added instruction for CAPS to force aggressive audio
+                    # Note: We enforce CAPS in the second sentence to trigger louder TTS
                     base_template = """
                     You are a Drill Sergeant grading a Cadet.
                     
@@ -256,7 +256,7 @@ if not st.session_state.answer_submitted:
                             model="tts-1",
                             voice="onyx",
                             input=feedback_text,
-                            speed=1.25  # Increased speed for "Frantic/Stress" effect
+                            speed=1.25  # Fast speed = stress
                         )
                         st.session_state.last_audio = audio_response.content
                     except Exception as audio_e:
@@ -284,7 +284,6 @@ if not st.session_state.answer_submitted:
 else:
     # --- 1. VISUAL FLASHBANG (If Error) ---
     if st.session_state.feedback_type == "error":
-        # This CSS animation flashes the screen red briefly
         st.markdown("""
             <style>
             @keyframes flash {
@@ -298,7 +297,6 @@ else:
             </style>
         """, unsafe_allow_html=True)
         
-        # Display Error Box
         st.error(st.session_state.feedback)
         if "Correct" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
@@ -309,24 +307,32 @@ else:
         if st.session_state.show_balloons:
             st.balloons()
 
-    # --- 3. AUDIO ASSAULT (Invisible & layered) ---
+    # --- 3. AUDIO ASSAULT (Layered & Looping) ---
     if st.session_state.last_audio:
         try:
             # A. The MTI Voice (Encoded)
             b64_voice = base64.b64encode(st.session_state.last_audio).decode()
             
             # B. The Stress Background (Only plays on error)
-            # This is a short, discordant "Wrong Answer" buzzer/siren.
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                siren_url = "https://cdn.pixabay.com/audio/2021/08/04/audio_12b0c7443c.mp3" 
+                # List of looping stress sounds
+                stress_sounds = [
+                    "https://cdn.pixabay.com/audio/2022/03/15/audio_2b29c5e064.mp3", # Emergency Alarm
+                    "https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3", # Police/Raid Siren
+                    "https://cdn.pixabay.com/audio/2022/01/18/audio_d0a13f69d2.mp3", # Sci-Fi Alert
+                    "https://cdn.pixabay.com/audio/2024/09/13/audio_494c8e7456.mp3"  # Deep War Alarm
+                ]
+                selected_siren = random.choice(stress_sounds)
+                
+                # Note: loop="true" keeps it playing as long as this screen is open
                 siren_html = f"""
-                    <audio autoplay="true" volume="0.2">
-                    <source src="{siren_url}" type="audio/mp3">
+                    <audio autoplay="true" loop="true" volume="0.3">
+                    <source src="{selected_siren}" type="audio/mp3">
                     </audio>
                 """
 
-            # C. Combine them into one invisible HTML block
+            # C. Combine them (Voice + Looping Background)
             md = f"""
                 {siren_html}
                 <audio autoplay="true" style="display:none;">
