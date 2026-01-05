@@ -261,8 +261,6 @@ if not st.session_state.answer_submitted:
                     except Exception as audio_e:
                         st.warning(f"Audio generation failed: {audio_e}")
                     
-                    # Logic: If the AI was forced to say "Correct" (even for sloppy answers), 
-                    # we treat it as success and do NOT flash/siren.
                     if "Correct" in feedback_text:
                         st.session_state.feedback_type = "success"
                         if st.session_state.wrong_streak >= 4:
@@ -283,7 +281,7 @@ if not st.session_state.answer_submitted:
 
 # STATE B: RESULT MODE (User has submitted)
 else:
-    # --- 1. VISUAL FLASHBANG (Only on Total Failure) ---
+    # --- 1. VISUAL FLASHBANG ---
     if st.session_state.feedback_type == "error":
         st.markdown("""
             <style>
@@ -302,69 +300,43 @@ else:
         if "Correct" not in st.session_state.feedback:
             st.info(f"**Correct Answer:**\n{correct_answer}")
             
-    # --- 2. SUCCESS STATE (Includes Sloppy Pass) ---
+    # --- 2. SUCCESS STATE ---
     elif st.session_state.feedback_type == "success":
         st.success(st.session_state.feedback)
         if st.session_state.show_balloons:
             st.balloons()
 
-    # --- 3. AUDIO ASSAULT (Layered & Looping) ---
+    # --- 3. AUDIO ASSAULT (Original "Working" Method) ---
     if st.session_state.last_audio:
         try:
-            # A. The MTI Voice (Encoded)
+            # A. The MTI Voice
             b64_voice = base64.b64encode(st.session_state.last_audio).decode()
             
-            # B. The Stress Background
+            # B. The Stress Background (Klaxon/Siren)
             siren_html = ""
             if st.session_state.feedback_type == "error":
-                # UPDATED: Reliable MP3 links only (No OGG)
-                stress_sounds = [
-                    "https://www.soundjay.com/mechanical/sounds/smoke-detector-1.mp3", # Smoke Detector
-                    "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3", # Fire Bell
-                    "https://www.soundjay.com/buttons/sounds/beep-10.mp3" # Annoying Beep
-                ]
-                selected_siren = random.choice(stress_sounds)
+                # High-stress Nuclear Alarm / Air Raid style
+                siren_url = "https://cdn.pixabay.com/audio/2022/03/10/audio_5b36489439.mp3" 
                 
-                # HTML5 Audio with ID. Note the 'volume' attribute doesn't work in raw HTML, 
-                # we must use JS to set volume.
+                # We use a simple HTML audio tag. This is what worked before.
                 siren_html = f"""
-                    <audio id="siren_player" loop>
-                        <source src="{selected_siren}" type="audio/mp3">
+                    <audio autoplay="true" loop volume="1.0">
+                    <source src="{siren_url}" type="audio/mp3">
                     </audio>
                 """
 
-            # C. Combine them
-            # KEY FIX: We use width:1px height:1px instead of hidden/0px. 
-            # This tricks the browser into thinking the player is "visible".
+            # C. Combine them into one invisible HTML block
+            # No Scripts. No hidden divs. Just the raw autoplay tags that worked originally.
             md = f"""
-                <div style="width:1px; height:1px; opacity:0.01; overflow:hidden;">
-                    {siren_html}
-                    <audio id="voice_player">
-                        <source src="data:audio/mp3;base64,{b64_voice}" type="audio/mp3">
-                    </audio>
-                </div>
-                
-                <script>
-                    // The JavaScript Enforcer
-                    // 1. Get the elements
-                    var v = document.getElementById("voice_player");
-                    var s = document.getElementById("siren_player");
-                    
-                    // 2. Set volumes (Voice louder, siren background)
-                    if (v) {{ v.volume = 1.0; v.play(); }}
-                    if (s) {{ s.volume = 0.4; s.play(); }}
-                </script>
+                {siren_html}
+                <audio autoplay="true" style="display:none;">
+                <source src="data:audio/mp3;base64,{b64_voice}" type="audio/mp3">
+                </audio>
                 """
             st.markdown(md, unsafe_allow_html=True)
             
-            # D. FALLBACK PLAYER
-            # If the hack above fails, this standard player will appear so you can manually play it.
-            # It also helps 'prime' the browser to allow audio.
-            with st.expander("Audio not playing? Click here", expanded=False):
-                st.audio(st.session_state.last_audio, format="audio/mp3")
-            
         except Exception as e:
-            st.warning(f"Audio playback error: {e}")
+            st.warning("Audio playback error.")
 
     # Next Button
     if st.button("Next Question ->", type="primary", use_container_width=True):
@@ -378,4 +350,3 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
-
