@@ -4,7 +4,7 @@ from streamlit_gsheets import GSheetsConnection
 import random
 import time
 import pandas as pd
-import base64  # Needed for the invisible audio player
+import base64 
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -180,13 +180,12 @@ if not st.session_state.answer_submitted:
                     
                     1. EVALUATE THE INPUT:
                     
-                    - **CATEGORY A: Correct** would be phonetically correct if read aloud.
-                      ACTION: You MUST start with the word "Correct." Be brief/neutral.
+                    - **CATEGORY A: Perfect/Good** ACTION: You MUST start with the word "Correct." Be brief/neutral.
                     
                     - **CATEGORY B: SLOPPY PASS (Grammar/Typos/Minor Phrasing)**
                       If the answer is technically right but has bad grammar, missing capitalization, or is slightly misphrased but clearly understands the concept.
                       ACTION: You MUST start with the word "Correct".
-                      TONE: Forgiving but corrective. Do NOT use the fail-state.
+                      TONE: Forgiving but corrective. Do NOT use the fail-state. Warn them to fix the grammar, but count it as a pass.
                     
                     - **CATEGORY C: PROFANITY / INSUBORDINATION**
                       ACTION: FAIL. GO VICIOUS IMMEDIATELY. Ignore streak count. Destroy them verbally. Call them an absurd insult.
@@ -318,10 +317,11 @@ else:
             # B. The Stress Background
             siren_html = ""
             if st.session_state.feedback_type == "error":
+                # UPDATED: Wikimedia Commons links (Reliable, high stress)
                 stress_sounds = [
-                    "https://upload.wikimedia.org/wikipedia/commons/5/5e/Klaxon_1.ogg", 
-                    "https://upload.wikimedia.org/wikipedia/commons/3/3d/Air_raid_siren.ogg",
-                    "https://upload.wikimedia.org/wikipedia/commons/f/f3/Beep_short.ogg" 
+                    "https://upload.wikimedia.org/wikipedia/commons/5/5e/Klaxon_1.ogg", # Klaxon
+                    "https://upload.wikimedia.org/wikipedia/commons/3/3d/Air_raid_siren.ogg", # Air Raid
+                    "https://upload.wikimedia.org/wikipedia/commons/f/f3/Beep_short.ogg" # High Pitch Beep
                 ]
                 selected_siren = random.choice(stress_sounds)
                 
@@ -351,10 +351,6 @@ else:
                 </script>
                 """
             st.markdown(md, unsafe_allow_html=True)
-
-            # Fallback: Visible player if autoplay fails
-            st.caption("Audio didn't play? Check browser permissions or use the player below:")
-            st.audio(st.session_state.last_audio, format="audio/mp3")
             
         except Exception as e:
             st.warning(f"Audio playback error: {e}")
@@ -371,5 +367,3 @@ st.markdown("""
     NOTICE: This is a cadet-developed study tool unaffiliated with the Department of the Air Force and is designed for educational purposes only. Maintain basic OPSEC.
 </div>
 """, unsafe_allow_html=True)
-
-
